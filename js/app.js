@@ -8,6 +8,9 @@
   const { WORDS, UNITS, GLOSS } = window.Course;
   const S = window.SaveSystem, L = window.Latin;
   const DEVICE = S.getDeviceId();
+  // Shown in the UI and in bug reports. Bump on every release.
+  const APP_VERSION = '0.1.0-beta';
+  const REPO_URL = 'https://github.com/seregabitvibecoder2026/latinum';
   const boot = S.load();
   let save = boot.save;
 
@@ -928,7 +931,12 @@
         <label class="row2">Theme <select id="theme">${['auto', 'light', 'dark'].map(t => `<option ${t === s.darkMode ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
         <label class="row2"><input type="checkbox" id="unl" ${s.unlockAll ? 'checked' : ''}> Unlock all lessons</label>
       </div>
-      <p class="muted small center">Latinum · save schema v${S.CURRENT_SCHEMA}</p>`;
+      <div class="card"><h2 class="h2">🐞 Feedback</h2>
+        <p class="muted">Found a bug, a wrong translation or wrong stress? Have an idea? Tell us!</p>
+        <div class="btns2"><a class="btn" target="_blank" rel="noopener" href="${issueURL('bug')}">🐞 Report a bug</a>
+        <a class="btn" target="_blank" rel="noopener" href="${issueURL('idea')}">💡 Suggest an idea</a></div>
+        <p class="muted small">Opens GitHub (free account needed). Your progress is not sent.</p></div>
+      <p class="muted small center">Latinum v${APP_VERSION} · save schema v${S.CURRENT_SCHEMA}</p>`;
 
     const set = (k, v) => { save.settings[k] = v; commit(); };
     $('#pname').onchange = e => { save.profile.name = e.target.value.slice(0, 40); commit(); };
@@ -961,6 +969,15 @@
     };
   }
   document.addEventListener('input', e => { if (e.target.id === 'codein') window.__codein = e.target.value; });
+
+  /** Prefilled GitHub issue link — contains only app version + browser, never the save. */
+  function issueURL(kind) {
+    const env = `App: v${APP_VERSION} · Screen: ${innerWidth}×${innerHeight} · Browser: ${navigator.userAgent}`;
+    const p = kind === 'bug'
+      ? { template: 'bug.yml', title: '[Bug] ', env }
+      : { template: 'idea.yml', title: '[Idea] ' };
+    return REPO_URL + '/issues/new?' + new URLSearchParams(p).toString();
+  }
 
   async function importText(text) {
     let inc;

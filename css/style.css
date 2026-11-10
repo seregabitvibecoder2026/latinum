@@ -260,6 +260,7 @@ code { background: var(--line); padding: 1px 5px; border-radius: 5px; font-size:
 .ach { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 10px 6px; border-radius: 14px; border: 2px solid var(--line); opacity: .45; filter: grayscale(1); }
 .ach.got { opacity: 1; filter: none; border-color: var(--gold); background: color-mix(in srgb, var(--gold) 10%, var(--card)); }
 .ach span { font-size: 2rem; } .ach b { font-size: .85rem; } .ach small { font-size: .72rem; color: var(--muted); }
+.btns2 { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; } a.btn { text-decoration: none; display: inline-block; }
 .sync .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
 @media (max-width: 480px) { .sync .btns { grid-template-columns: 1fr; } .lexrow { grid-template-columns: 34px 1fr 1fr; } .lexrow .str { grid-column: 1 / -1; } }
 details { margin-top: 10px; } summary { cursor: pointer; font-weight: 700; }

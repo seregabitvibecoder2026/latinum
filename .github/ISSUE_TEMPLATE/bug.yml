@@ -1,0 +1,38 @@
+name: 🐞 Ошибка / Bug
+description: Что-то сломалось, неправильный перевод или ударение
+title: "[Bug] "
+labels: ["bug", "beta-test"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Что за проблема? / What kind?
+      options:
+        - Программа сломалась / App broke
+        - Неправильный перевод / Wrong translation
+        - Неправильное ударение или долгота / Wrong stress or vowel length
+        - Не засчитан правильный ответ / Correct answer rejected
+        - Пропал прогресс / Progress lost
+        - Другое / Other
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: Что случилось? / What happened?
+      description: Какое упражнение, какое слово или предложение, что вы ответили. Скриншот очень помогает.
+      placeholder: "Упражнение «Translate this sentence», фраза «Puer ambulat.», ответ «The boy is walking» не засчитали."
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Что должно было быть? / What did you expect?
+  - type: input
+    id: env
+    attributes:
+      label: Устройство / Device
+      description: Заполняется автоматически, если открыть форму из приложения (Profile → Report a bug)
+  - type: markdown
+    attributes:
+      value: "⚠️ Не вставляйте sync-код или файл прогресса — он здесь не нужен."

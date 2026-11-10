@@ -1,0 +1,17 @@
+name: 💡 Идея / Idea
+description: Предложить улучшение, новый урок или фичу
+title: "[Idea] "
+labels: ["idea", "beta-test"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Идея / Idea
+      description: Что добавить или изменить и почему это сделает обучение лучше?
+    validations:
+      required: true
+  - type: dropdown
+    id: fun
+    attributes:
+      label: Насколько интересно учиться сейчас? / How fun is it now?
+      options: ["😴 1", "🙂 2", "😀 3", "🤩 4", "🔥 5"]
