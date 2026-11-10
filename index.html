@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Latinum</title>
+  <meta name="description" content="Learn Latin with classical pronunciation — XP, streaks, stress training and real Roman quotes.">
+  <meta name="theme-color" content="#b4432b">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦉</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="top"></header>
+    <main id="screen"></main>
+    <nav id="nav"></nav>
+  </div>
+  <div id="toasts"></div>
+  <noscript>Latinum needs JavaScript.</noscript>
+  <!-- Load order matters: engine → save → content → app. Plain scripts (no ES modules) so it works from file:// -->
+  <script src="js/latin.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/course.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

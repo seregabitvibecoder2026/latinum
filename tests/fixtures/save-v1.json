@@ -1,0 +1,26 @@
+{
+ "app": "latinum",
+ "schema": 1,
+ "createdAt": 1762700000000,
+ "updatedAt": 1762790000000,
+ "lastExportAt": 1762780000000,
+ "profile": { "name": "Fixture", "dailyGoal": 50 },
+ "settings": { "sound": false, "tts": true, "voiceURI": "", "ttsRate": 0.8, "listening": true, "darkMode": "dark" },
+ "counters": {
+  "dev-phone": { "xpByDay": { "2026-11-08": 40, "2026-11-09": 25 }, "correct": 50, "wrong": 7, "stress": 12, "lessons": 4, "perfect": 1 },
+  "dev-laptop": { "xpByDay": { "2026-11-09": 30 }, "correct": 20, "wrong": 2, "stress": 5, "lessons": 2, "perfect": 0 }
+ },
+ "lessons": {
+  "l_sounds_1": { "lvl": 2, "best": 90, "last": 1762780000000, "n": 2 },
+  "l_sounds_2": { "lvl": 1, "best": 75, "last": 1762785000000, "n": 1 },
+  "l_removed_in_future": { "lvl": 3, "best": 100, "last": 1762785000000, "n": 3 }
+ },
+ "words": {
+  "aqua": { "s": 3, "last": 1762780000000, "c": 4, "w": 1 },
+  "malum_apple": { "s": 1, "last": 1762785000000, "c": 1, "w": 1 }
+ },
+ "achievements": { "first_lesson": 1762700100000 },
+ "records": { "arenaBest": 17 },
+ "ext": { "someFutureFeature": { "x": 1 } },
+ "unknownTopLevelField": "must survive"
+}
