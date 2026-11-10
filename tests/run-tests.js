@@ -168,6 +168,74 @@ test('file JSON import round trip', async () => {
   eq(sortKeys(await S.parseImport(S.toJSON(s))), sortKeys(s));
 });
 
+// ---------------- hardening (found by the "destroyer" review) ----------------
+const clearStore = () => Object.keys(store).forEach(k => delete store[k]);
+test('huge / NaN / negative counters are clamped (no freeze on load)', () => {
+  const f = fixture();
+  f.counters['dev-phone'].xpByDay['2026-11-08'] = 1e308;
+  f.counters['dev-phone'].correct = -5;
+  f.counters['dev-laptop'].xpByDay['2026-11-09'] = 'NaN';
+  const m = S.migrate(f);
+  ok(isFinite(S.totalXP(m)) && S.totalXP(m) <= 2e6, 'xp clamped: ' + S.totalXP(m));
+  eq(m.counters['dev-phone'].correct, 0);
+});
+test('reserved keys (__proto__, constructor) are dropped from id maps', () => {
+  const f = JSON.parse('{"app":"latinum","schema":1,"words":{"constructor":{"s":3},"__proto__":{"s":1},"aqua":{"s":2}},"lessons":{"toString":{"lvl":1}}}');
+  const m = S.migrate(f);
+  ok(!Object.prototype.hasOwnProperty.call(m.words, 'constructor'), 'constructor kept');
+  ok(!Object.prototype.hasOwnProperty.call(m.words, '__proto__'), '__proto__ kept');
+  eq(m.words.aqua.s, 2);
+  eq(Object.getPrototypeOf(m.words), Object.prototype, 'prototype not polluted');
+});
+test('fractional / string levels are sanitised; truthy achievement junk stays unlocked', () => {
+  const m = S.migrate({ app: 'latinum', schema: 1, lessons: { a: { lvl: 4.5 }, b: { lvl: '3' } }, achievements: { x: true, y: 0 } });
+  eq(m.lessons.a.lvl, 4); eq(m.lessons.b.lvl, 3);
+  ok(m.achievements.x > 0, 'x unlocked'); ok(!('y' in m.achievements));
+  eq(S.merge(m, m).achievements.x, 1);
+});
+test('future updatedAt is clamped', () => {
+  const m = S.migrate({ app: 'latinum', schema: 1, updatedAt: Date.now() + 1e12 });
+  ok(m.updatedAt <= Date.now() + 864e5 + 10);
+});
+test('merge commutative even with equal updatedAt', () => {
+  const a = S.defaultSave(), b = S.defaultSave();
+  a.updatedAt = b.updatedAt = 1000; a.profile.name = 'A'; b.profile.name = 'B';
+  eq(sortKeys(S.merge(a, b)), sortKeys(S.merge(b, a)));
+});
+test('corrupt main + NEWER backup → read-only, nothing overwritten', () => {
+  clearStore();
+  const newer = JSON.stringify(Object.assign(fixture(), { schema: S.CURRENT_SCHEMA + 1 }));
+  store[S.STORAGE_KEY] = '{broken'; store[S.BACKUP_KEY] = newer;
+  const r = S.load();
+  eq(r.status, 'newer'); ok(S.readOnlyReason, 'read-only');
+  ok(!S.persist(r.save), 'persist refused'); eq(store[S.BACKUP_KEY], newer);
+  ok(Object.keys(store).some(k => k.startsWith('latinum.save.corrupt-')), 'raw corrupt main quarantined');
+  clearStore(); S.load();
+});
+test('reset keeps a snapshot that survives later commits', () => {
+  clearStore();
+  const s = S.migrate(fixture()); S.persist(s);
+  S.wipeLocal();
+  const fresh = S.defaultSave(); S.persist(fresh); S.persist(fresh); S.persist(fresh);
+  ok(S.hasSnapshot()); eq(S.totalXP(S.readSnapshot()), 95);
+  clearStore();
+});
+test('after reset with a NEW device id, merging the old file adds up', () => {
+  const old = S.defaultSave(); S.addXP(old, 'devX', 100); S.bump(old, 'devX', 'lessons', 200);
+  const fresh = S.defaultSave(); S.addXP(fresh, 'devY', 50); S.bump(fresh, 'devY', 'lessons', 5);
+  const m = S.merge(fresh, old);
+  eq(S.totalXP(m), 150); eq(S.total(m, 'lessons'), 205);
+});
+test('stress engine survives junk input', () => {
+  for (const w of ['', '|', '||', '+', 'rosa+', 'a+', 'xyz', 'ĀĒĪ', '+que']) { L.analyze(w); L.explain(w); L.respell(w); L.ttsWord(w, 'es'); }
+  eq(L.analyze('rosa+').enclitic, false, 'only -que/-ne/-ve count as enclitics');
+});
+test('oversized sync code is rejected', async () => {
+  let threw = false;
+  try { await S.parseImport(S.CODE_PREFIX + 'j:' + 'A'.repeat(3e7)); } catch (e) { threw = true; }
+  ok(threw);
+});
+
 (async () => {
   for (const [name, fn] of tests) {
     try { await fn(); pass++; }

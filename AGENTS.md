@@ -16,6 +16,7 @@
 | `css/style.css` | Styles, light/dark tokens | low |
 | `tests/run-tests.js` | Test suite (no deps). **Run after every change** | — |
 | `tests/frozen-ids.json` | IDs that exist in users' saves. **Append-only** | — |
+| frozen storage keys | `latinum.save`, `latinum.save.backup`, `latinum.save.prereset`, `latinum.save.corrupt-*`, `latinum.deviceId` | **HIGH** |
 | `tests/fixtures/save-v1.json` | A real v1 save. Must always load. **Never edit; add new fixtures instead** | — |
 
 No build step, no npm, no ES modules (must work from `file://`). Plain `<script>` globals:
@@ -48,7 +49,7 @@ explicitly asks and understands the consequence).
    - Never remove an old migration.
 4. **Preserve unknown data.** `normalize()`, `migrate()` and `merge()` must keep fields and IDs
    they don't recognise (they may come from a newer/older version or another device).
-   Put experimental per-user data under `save.ext.<yourFeature>`.
+   Put experimental per-user data under `save.ext.<yourFeature>` (e.g. `ext.daily` = daily quests).
 5. **Merge must stay commutative and idempotent** (`merge(a,b) == merge(b,a)`,
    `merge(a,a) == a`) and must never lose progress. Additive counters (XP, number of
    correct answers…) live **per device** in `save.counters[deviceId]` and are merged with
@@ -59,7 +60,17 @@ explicitly asks and understands the consequence).
 6. **Only `save.js` touches localStorage keys of the save.** `app.js` mutates the `save`
    object and calls `commit()`. Do not write `localStorage.setItem('latinum.save', …)` anywhere else.
 7. A save from a newer schema must be refused (read-only), never overwritten. Keep that logic.
-8. Never auto-delete or reset progress. Reset happens only through the explicit
+8. **Multi-tab & reset safety** (don't remove):
+   - `app.js:commit()` re-reads storage and merges before every write (same `epoch`), so two
+     tabs never overwrite each other.
+   - Reset / replace-import / restore: take `SaveSystem.snapshot()` first, bump `save.epoch`,
+     and call `SaveSystem.rotateDeviceId()` (per-device counters must never go backwards
+     under the same id). Other tabs adopt a higher epoch instead of merging.
+   - Unreadable saves are copied to `latinum.save.corrupt-<ts>` before anything is written.
+   - `normalize()` clamps all numbers and drops `__proto__`/`constructor`/`prototype` keys;
+     app code must look ids up with `hasOwn`/`isWord`, never `WORDS[id]` on untrusted ids.
+   - Practice runs must not count as lessons (XP/achievement farming).
+9. Never auto-delete or reset progress. Reset happens only through the explicit
    "Reset all progress" button (which keeps a backup copy).
 
 ## Content conventions (`course.js`)

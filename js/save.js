@@ -36,6 +36,10 @@
   const BACKUP_KEY = 'latinum.save.backup';
   const DEVICE_KEY = 'latinum.deviceId';
   const CODE_PREFIX = 'LATINUM1:';
+  // snapshot taken before a reset / replace-import; never rotated by persist()
+  const PRERESET_KEY = 'latinum.save.prereset';
+  // prefix for unreadable saves we refuse to overwrite blindly
+  const QUARANTINE_PREFIX = 'latinum.save.corrupt-';
 
   // ---- Schema version: bump ONLY together with a migration ----
   const CURRENT_SCHEMA = 1;
@@ -49,6 +53,8 @@
       createdAt: now,
       updatedAt: now,
       lastExportAt: 0,
+      // bumped on every reset/replace; other tabs adopt a higher epoch instead of merging
+      epoch: 0,
       profile: { name: '', dailyGoal: 30 },
       settings: { sound: true, tts: true, voiceURI: '', ttsRate: 0.8, listening: true, darkMode: 'auto', unlockAll: false },
       // per-device additive counters: { [deviceId]: counterDefaults() }
@@ -85,6 +91,11 @@
 
   const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
   const num = (v, d = 0) => (typeof v === 'number' && isFinite(v) ? v : d);
+  /** finite number clamped to [0, max]; numeric strings accepted */
+  const cnum = (v, max) => { const n = typeof v === 'string' ? Number(v) : v; return Math.max(0, Math.min(max, num(n))); };
+  const RESERVED = ['__proto__', 'constructor', 'prototype'];
+  const MAX_COUNTER = 1e9, MAX_DAY_XP = 1e6;
+  function dropReserved(o) { for (const k of RESERVED) if (Object.prototype.hasOwnProperty.call(o, k)) delete o[k]; return o; }
 
   /** Fill missing / wrong-typed fields from defaults; preserve unknown fields. */
   function normalize(s) {
@@ -99,23 +110,40 @@
         }
       } else if (typeof s[k] !== typeof d[k]) s[k] = d[k];
     }
+    OPEN_MAPS.forEach(k => dropReserved(s[k]));
     for (const dev of Object.keys(s.counters)) {
       const c = s.counters[dev];
       if (!isObj(c)) { s.counters[dev] = counterDefaults(); continue; }
       const cd = counterDefaults();
-      for (const kk of Object.keys(cd)) if (typeof c[kk] !== typeof cd[kk]) c[kk] = cd[kk];
+      for (const kk of Object.keys(cd)) {
+        if (kk === 'xpByDay') continue;
+        c[kk] = cnum(c[kk], MAX_COUNTER);
+      }
       if (!isObj(c.xpByDay)) c.xpByDay = {};
+      dropReserved(c.xpByDay);
+      for (const d of Object.keys(c.xpByDay)) c.xpByDay[d] = cnum(c.xpByDay[d], MAX_DAY_XP);
     }
     for (const id of Object.keys(s.lessons)) {
       const l = s.lessons[id];
       if (!isObj(l)) { delete s.lessons[id]; continue; }
-      l.lvl = Math.max(0, Math.min(5, num(l.lvl))); l.best = num(l.best); l.last = num(l.last); l.n = num(l.n);
+      l.lvl = Math.floor(cnum(l.lvl, 5)); l.best = cnum(l.best, 100); l.last = cnum(l.last, 1e15); l.n = Math.floor(cnum(l.n, MAX_COUNTER));
     }
     for (const id of Object.keys(s.words)) {
       const w = s.words[id];
       if (!isObj(w)) { delete s.words[id]; continue; }
-      w.s = Math.max(0, Math.min(5, num(w.s))); w.last = num(w.last); w.c = num(w.c); w.w = num(w.w);
+      w.s = cnum(w.s, 5); w.last = cnum(w.last, 1e15); w.c = cnum(w.c, MAX_COUNTER); w.w = cnum(w.w, MAX_COUNTER);
     }
+    for (const id of Object.keys(s.achievements)) {
+      const v = s.achievements[id];
+      // any truthy junk means "unlocked"; keep it unlocked with a valid timestamp
+      if (!(typeof v === 'number' && isFinite(v) && v > 0)) { if (v) s.achievements[id] = 1; else delete s.achievements[id]; }
+    }
+    for (const k of Object.keys(s.records)) if (typeof s.records[k] === 'number') s.records[k] = cnum(s.records[k], MAX_COUNTER);
+    s.epoch = Math.floor(cnum(s.epoch, MAX_COUNTER));
+    // a clock from the future must not win every merge forever
+    const soon = Date.now() + 864e5;
+    if (s.updatedAt > soon) s.updatedAt = soon;
+    s.profile.dailyGoal = Math.max(5, Math.min(500, num(s.profile.dailyGoal, 30)));
     s.app = APP_ID;
     return s;
   }
@@ -152,7 +180,8 @@
    */
   function merge(aIn, bIn) {
     const a = normalize(deepCopy(aIn)), b = normalize(deepCopy(bIn));
-    const newer = a.updatedAt >= b.updatedAt ? a : b;
+    // deterministic winner, also on equal timestamps (keeps merge commutative)
+    const newer = a.updatedAt !== b.updatedAt ? (a.updatedAt > b.updatedAt ? a : b) : (JSON.stringify(a) >= JSON.stringify(b) ? a : b);
     const older = newer === a ? b : a;
     // start from the newer one so profile/settings/unknown top-level fields come from it
     const out = deepCopy(newer);
@@ -162,6 +191,7 @@
     out.createdAt = Math.min(a.createdAt, b.createdAt);
     out.updatedAt = Math.max(a.updatedAt, b.updatedAt);
     out.lastExportAt = Math.max(a.lastExportAt, b.lastExportAt);
+    out.epoch = Math.max(a.epoch, b.epoch);
     out.schema = CURRENT_SCHEMA;
 
     // counters: per device, per field max (G-counter)
@@ -198,7 +228,7 @@
     // achievements: union, earliest unlock time
     out.achievements = {};
     for (const id of new Set([...Object.keys(a.achievements), ...Object.keys(b.achievements)])) {
-      const ta = num(a.achievements[id], Infinity), tb = num(b.achievements[id], Infinity);
+      const ta = a.achievements[id] || Infinity, tb = b.achievements[id] || Infinity;
       out.achievements[id] = Math.min(ta, tb);
     }
     // records: max of every numeric record
@@ -245,10 +275,18 @@
         readOnlyReason = e.message;
         return { save: normalize(JSON.parse(store.getItem(STORAGE_KEY))), status: 'newer', error: e.message };
       }
+      // main is unreadable: keep a raw copy before anything can overwrite it
+      quarantine(store.getItem(STORAGE_KEY));
       try {
         const b = tryKey(BACKUP_KEY);
         if (b) return { save: b, status: 'restored-backup', error: String(e.message || e) };
-      } catch (e2) { /* fall through */ }
+      } catch (e2) {
+        if (e2.code === 'NEWER') {
+          readOnlyReason = e2.message;
+          return { save: normalize(JSON.parse(store.getItem(BACKUP_KEY))), status: 'newer', error: e2.message };
+        }
+        quarantine(store.getItem(BACKUP_KEY));
+      }
       return { save: defaultSave(), status: 'corrupt', error: String(e.message || e) };
     }
     return { save: defaultSave(), status: 'new' };
@@ -271,9 +309,45 @@
     }
   }
 
+  function quarantine(raw) {
+    const store = ls();
+    if (!store || !raw) return;
+    try { store.setItem(QUARANTINE_PREFIX + Date.now(), raw); } catch (e) { /* storage full: nothing we can do */ }
+  }
+  /** Keep the current save in a slot that persist() never rotates (before reset / replace). */
+  function snapshot() {
+    const store = ls();
+    if (!store) return;
+    const cur = store.getItem(STORAGE_KEY);
+    if (cur) try { store.setItem(PRERESET_KEY, cur); } catch (e) { /* ignore */ }
+  }
+  function hasSnapshot() { const st = ls(); return !!(st && st.getItem(PRERESET_KEY)); }
+  function readSnapshot() { const st = ls(); const t = st && st.getItem(PRERESET_KEY); return t ? migrate(JSON.parse(t)) : null; }
+  /** Can we actually write? (false in some private modes / when storage is full) */
+  function storageWritable() {
+    const st = ls(); if (!st) return false;
+    try { st.setItem('latinum.probe', '1'); st.removeItem('latinum.probe'); return true; } catch (e) { return false; }
+  }
+  /** Read what is currently stored (for merge-before-write), or null. */
+  function peek() {
+    const st = ls(); const t = st && st.getItem(STORAGE_KEY);
+    if (!t) return null;
+    try { return migrate(JSON.parse(t)); } catch (e) { return null; }
+  }
+  /**
+   * New device id. Needed after reset / replace-import / fresh start: the
+   * per-device G-counters must never go backwards under the same id.
+   */
+  function rotateDeviceId() {
+    const store = ls();
+    const id = 'dev-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+    try { store && store.setItem(DEVICE_KEY, id); } catch (e) { /* ignore */ }
+    return id;
+  }
   function wipeLocal() {
     const store = ls();
     if (!store) return;
+    snapshot();
     const prev = store.getItem(STORAGE_KEY);
     if (prev) store.setItem(BACKUP_KEY, prev);
     store.removeItem(STORAGE_KEY);
@@ -308,9 +382,20 @@
     for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
     return out;
   }
-  async function streamBytes(bytes, stream) {
-    const s = new Blob([bytes]).stream().pipeThrough(stream);
-    return new Uint8Array(await new Response(s).arrayBuffer());
+  /** Pipe bytes through a (de)compression stream; stop if the output exceeds maxOut (zip-bomb guard). */
+  async function streamBytes(bytes, stream, maxOut = 2e7) {
+    const reader = new Blob([bytes]).stream().pipeThrough(stream).getReader();
+    const parts = []; let total = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.length;
+      if (total > maxOut) { try { await reader.cancel(); } catch (e) { /* ignore */ } throw new Error('Sync code is too large'); }
+      parts.push(value);
+    }
+    const out = new Uint8Array(total); let o = 0;
+    for (const p of parts) { out.set(p, o); o += p.length; }
+    return out;
   }
 
   /** Compact text code for copy-paste sync: "LATINUM1:z:...." */
@@ -325,10 +410,12 @@
   /** Parse a JSON file text OR a sync code into a migrated save. */
   async function parseImport(text) {
     text = String(text).trim();
+    if (text.length > 2e7) throw new Error('File is too large to be a Latinum save');
     let obj;
     if (text.startsWith(CODE_PREFIX)) {
       const body = text.slice(CODE_PREFIX.length).replace(/\s+/g, '');
       const mode = body.slice(0, 2), data = b64decode(body.slice(2));
+      if (data.length > 2e6) throw new Error('Sync code is too large');
       const bytes = mode === 'z:' ? await streamBytes(data, new DecompressionStream('deflate-raw')) : data;
       obj = JSON.parse(new TextDecoder().decode(bytes));
     } else {
@@ -371,6 +458,7 @@
     APP_ID, STORAGE_KEY, BACKUP_KEY, DEVICE_KEY, CODE_PREFIX, CURRENT_SCHEMA, MIGRATIONS,
     defaultSave, normalize, migrate, merge, load, persist, wipeLocal, getDeviceId,
     exportFile, toCode, parseImport, toJSON,
+    PRERESET_KEY, snapshot, hasSnapshot, readSnapshot, storageWritable, peek, rotateDeviceId,
     dayKey, addXP, bump, total, xpByDay, totalXP, xpToday, streak,
     get readOnlyReason() { return readOnlyReason; }
   };

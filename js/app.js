@@ -7,14 +7,38 @@
   'use strict';
   const { WORDS, UNITS, GLOSS } = window.Course;
   const S = window.SaveSystem, L = window.Latin;
-  const DEVICE = S.getDeviceId();
+  let DEVICE = S.getDeviceId();
   // Shown in the UI and in bug reports. Bump on every release.
-  const APP_VERSION = '0.1.0-beta';
+  const APP_VERSION = '0.2.0-beta';
   const REPO_URL = 'https://github.com/seregabitvibecoder2026/latinum';
   const boot = S.load();
   let save = boot.save;
 
-  function commit() { S.persist(save); renderTop(); }
+  let saveFailed = false;
+  /**
+   * Persist the in-memory save. Merges in whatever another tab stored first
+   * (same epoch), so tabs never overwrite each other's progress.
+   */
+  function commit() {
+    if (!S.readOnlyReason) {
+      const stored = S.peek();
+      save.updatedAt = Date.now(); // our in-memory changes are the newest
+      if (stored && stored.epoch === save.epoch) save = S.merge(stored, save);
+      else if (stored && stored.epoch > save.epoch) { save = stored; DEVICE = S.getDeviceId(); } // another tab reset/replaced: respect it
+      const ok = S.persist(save);
+      if (!ok && !saveFailed) { saveFailed = true; showSaveFailed(); }
+      if (ok) { saveFailed = false; const b = document.getElementById('savefail'); b && b.remove(); }
+    }
+    renderTop();
+  }
+  function showSaveFailed() {
+    if (document.getElementById('savefail')) return;
+    const b = el(`<div id="savefail" class="banner bad sticky">⚠️ This browser is not saving your progress (storage full or blocked, e.g. private mode). <button class="btn small">⬇️ Download progress file</button></div>`);
+    b.querySelector('button').onclick = () => { S.exportFile(save); };
+    document.body.prepend(b);
+  }
+  const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+  const isWord = id => hasOwn(WORDS, id);
 
   // ================= utils =================
   const $ = (s, el = document) => el.querySelector(s);
@@ -24,7 +48,7 @@
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const uniq = a => [...new Set(a)];
   function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
-  const LA2WORD = {};
+  const LA2WORD = Object.create(null);
   Object.entries(WORDS).forEach(([id, w]) => { LA2WORD[w.la.toLowerCase()] = id; });
 
   // ================= sound effects =================
@@ -58,7 +82,7 @@
     list: [], warned: false,
     init() {
       if (!this.supported()) return;
-      const load = () => { this.list = speechSynthesis.getVoices(); };
+      const load = () => { this.list = speechSynthesis.getVoices(); syncVoiceClass(); };
       load();
       speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', load);
     },
@@ -66,14 +90,24 @@
     candidates() { return this.list.filter(v => /^(la|es|it)/i.test(v.lang)); },
     chosen() {
       const c = this.candidates(); if (!c.length) return null;
-      return c.find(v => v.voiceURI === save.settings.voiceURI) || c.find(v => /^la/i.test(v.lang)) ||
-        c.find(v => /^es/i.test(v.lang)) || c.find(v => /^it/i.test(v.lang));
+      // Spanish first: its written accent reliably forces our stress; a Latin voice gets no stress cue
+      return c.find(v => v.voiceURI === save.settings.voiceURI) || c.find(v => /^es/i.test(v.lang)) ||
+        c.find(v => /^it/i.test(v.lang)) || c.find(v => /^la/i.test(v.lang));
     },
     available() { return this.supported() && save.settings.tts && !!this.chosen(); },
+    canForce() { const v = this.available() && this.chosen(); return !!v && /^(es|it)/i.test(v.lang); },
+    /** Speak a word with the stress forced onto syllable idx (for "hear the stress" drills). */
+    speakForced(word, idx) {
+      const v = this.chosen(); if (!v || !save.settings.tts) return;
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(L.ttsWord(word, v.lang.slice(0, 2).toLowerCase(), idx));
+      u.voice = v; u.lang = v.lang; u.rate = save.settings.ttsRate * 0.9;
+      speechSynthesis.speak(u);
+    },
     speak(text, rate) {
       if (!this.supported() || !save.settings.tts) return;
       const v = this.chosen();
-      if (!v) { if (!this.warned) { toast('🔇 No Spanish/Italian/Latin voice installed — audio is off. See Profile → Settings.'); this.warned = true; } return; }
+      if (!v) return;
       speechSynthesis.cancel();
       const lang = v.lang.slice(0, 2).toLowerCase();
       const u = new SpeechSynthesisUtterance(L.ttsText(text, lang));
@@ -81,6 +115,9 @@
       speechSynthesis.speak(u);
     }
   };
+
+  /** Hide all 🔊 buttons when no usable voice exists (instead of dead buttons). */
+  function syncVoiceClass() { document.body.classList.toggle('novoice', !Voice.available()); }
 
   // ================= Latin rendering =================
   /** One word, syllables separated, stressed syllable highlighted. */
@@ -99,7 +136,7 @@
   }
   function glossFor(raw) {
     const c = L.clean(raw).toLowerCase();
-    if (GLOSS[c]) return GLOSS[c];
+    if (hasOwn(GLOSS, c)) return GLOSS[c];
     if (LA2WORD[c]) return WORDS[LA2WORD[c]].en;
     return '…';
   }
@@ -169,19 +206,29 @@
     return lst(ALL_LESSONS[i - 1].l.id).lvl > 0 || lst(id).lvl > 0;
   }
   const need = n => 25 * (n - 1) * n;
-  function levelInfo(xp) { let lvl = 1; while (xp >= need(lvl + 1)) lvl++; return { lvl, cur: xp - need(lvl), span: need(lvl + 1) - need(lvl) }; }
+  function levelInfo(xp) {
+    xp = Math.max(0, Math.min(1e9, Number(xp) || 0));
+    let lvl = Math.max(1, Math.floor((1 + Math.sqrt(1 + xp / 6.25)) / 2));
+    while (need(lvl + 1) <= xp) lvl++; // float safety (at most a step or two)
+    while (lvl > 1 && need(lvl) > xp) lvl--;
+    return { lvl, cur: xp - need(lvl), span: need(lvl + 1) - need(lvl) };
+  }
   const RANKS = [[1, 'Tīrō', 'recruit'], [3, 'Mīles', 'soldier'], [5, 'Decuriō', 'squad leader'], [8, 'Centuriō', 'centurion'],
-    [12, 'Tribūnus', 'tribune'], [16, 'Lēgātus', 'general'], [20, 'Praetor', 'judge'], [25, 'Cōnsul', 'consul'], [30, 'Imperātor', 'emperor']];
+    [12, 'Tribūnus', 'tribune'], [16, 'Lēgātus', 'legate'], [20, 'Praetor', 'magistrate'], [25, 'Cōnsul', 'consul'], [30, 'Imperātor', 'commander']];
   const rankOf = lvl => RANKS.filter(r => r[0] <= lvl).pop();
-  const learnedIds = () => Object.keys(save.words).filter(id => WORDS[id]);
+  const learnedIds = () => Object.keys(save.words).filter(isWord);
+  // ---- spaced repetition: a word is due after 0,1,2,4,8,16,30 days depending on strength ----
+  const INTERVAL = [0, 1, 2, 4, 8, 16, 30];
+  const dueAt = id => { const w = save.words[id]; return w.last + INTERVAL[Math.min(6, Math.floor(w.s))] * 864e5; };
+  const dueIds = () => learnedIds().filter(id => !WORDS[id].proper && dueAt(id) <= Date.now()).sort((a, b) => dueAt(a) - dueAt(b));
   function wordEff(id) {
     const w = save.words[id]; if (!w) return -1;
     const days = (Date.now() - w.last) / 864e5;
     return w.s - days / Math.pow(2, w.s);
   }
-  function touchWord(id) { if (WORDS[id] && !save.words[id]) save.words[id] = { s: 0, last: Date.now(), c: 0, w: 0 }; }
+  function touchWord(id) { if (isWord(id) && !save.words[id]) save.words[id] = { s: 0, last: Date.now(), c: 0, w: 0 }; }
   function recordWord(id, ok) {
-    if (!WORDS[id]) return;
+    if (!isWord(id)) return;
     touchWord(id);
     const w = save.words[id]; w.last = Date.now();
     if (ok) { w.c++; w.s = Math.min(5, w.s + 1); } else { w.w++; w.s = Math.max(0, w.s - 1); }
@@ -189,26 +236,78 @@
 
   // ================= achievements =================
   const ACH = [
-    { id: 'first_lesson', icon: '🎓', name: 'Prīmus gradus', desc: 'Finish your first lesson', test: () => S.total(save, 'lessons') >= 1 },
+    { id: 'first_lesson', icon: '🎓', name: 'Prīmus gradus', desc: 'Finish your first lesson', test: () => S.total(save, 'lessons') >= 1, prog: () => [S.total(save, 'lessons'), 1] },
     { id: 'unit_sounds', icon: '🗣️', name: 'Ōrātor', desc: 'Finish the pronunciation unit', test: () => UNITS[0].lessons.every(l => lst(l.id).lvl > 0) },
-    { id: 'perfect_1', icon: '💎', name: 'Sine errōre', desc: 'A lesson with no mistakes', test: () => S.total(save, 'perfect') >= 1 },
-    { id: 'perfect_10', icon: '👑', name: 'Perfectus', desc: '10 flawless lessons', test: () => S.total(save, 'perfect') >= 10 },
-    { id: 'stress_50', icon: '🎯', name: 'Accentus', desc: '50 correct stress answers', test: () => S.total(save, 'stress') >= 50 },
-    { id: 'stress_300', icon: '🏹', name: 'Sagittārius', desc: '300 correct stress answers', test: () => S.total(save, 'stress') >= 300 },
-    { id: 'streak_3', icon: '🔥', name: 'Trīduum', desc: '3-day streak', test: () => S.streak(save) >= 3 },
-    { id: 'streak_7', icon: '🌋', name: 'Hebdomas', desc: '7-day streak', test: () => S.streak(save) >= 7 },
-    { id: 'streak_30', icon: '☄️', name: 'Mēnsis', desc: '30-day streak', test: () => S.streak(save) >= 30 },
-    { id: 'xp_100', icon: '⭐', name: 'Centum', desc: 'Earn 100 XP', test: () => S.totalXP(save) >= 100 },
-    { id: 'xp_1000', icon: '🌟', name: 'Mīlle', desc: 'Earn 1000 XP', test: () => S.totalXP(save) >= 1000 },
-    { id: 'words_50', icon: '📚', name: 'Lexicon', desc: 'Learn 50 words', test: () => learnedIds().length >= 50 },
+    { id: 'perfect_1', icon: '💎', name: 'Sine errōre', desc: 'A lesson with no mistakes', test: () => S.total(save, 'perfect') >= 1, prog: () => [S.total(save, 'perfect'), 1] },
+    { id: 'perfect_10', icon: '👑', name: 'Perfectus', desc: '10 flawless lessons', test: () => S.total(save, 'perfect') >= 10, prog: () => [S.total(save, 'perfect'), 10] },
+    { id: 'stress_50', icon: '🎯', name: 'Accentus', desc: '50 correct stress answers', test: () => S.total(save, 'stress') >= 50, prog: () => [S.total(save, 'stress'), 50] },
+    { id: 'stress_300', icon: '🏹', name: 'Sagittārius', desc: '300 correct stress answers', test: () => S.total(save, 'stress') >= 300, prog: () => [S.total(save, 'stress'), 300] },
+    { id: 'streak_3', icon: '🔥', name: 'Trīduum', desc: '3-day streak', test: () => S.streak(save) >= 3, prog: () => [S.streak(save), 3] },
+    { id: 'streak_7', icon: '🌋', name: 'Hebdomas', desc: '7-day streak', test: () => S.streak(save) >= 7, prog: () => [S.streak(save), 7] },
+    { id: 'streak_30', icon: '☄️', name: 'Mēnsis', desc: '30-day streak', test: () => S.streak(save) >= 30, prog: () => [S.streak(save), 30] },
+    { id: 'xp_100', icon: '⭐', name: 'Centum', desc: 'Earn 100 XP', test: () => S.totalXP(save) >= 100, prog: () => [S.totalXP(save), 100] },
+    { id: 'xp_1000', icon: '🌟', name: 'Mīlle', desc: 'Earn 1000 XP', test: () => S.totalXP(save) >= 1000, prog: () => [S.totalXP(save), 1000] },
+    { id: 'words_50', icon: '📚', name: 'Lexicon', desc: 'Learn 50 words', test: () => learnedIds().length >= 50, prog: () => [learnedIds().length, 50] },
     { id: 'quote_1', icon: '📜', name: 'Lēctor', desc: 'Finish a lesson with a classical quote', test: () => ALL_LESSONS.some(x => (x.l.sentences || []).some(s => s.src) && lst(x.l.id).lvl > 0) },
     { id: 'classics', icon: '🏺', name: 'Philologus', desc: 'Finish every classics lesson', test: () => UNITS.filter(u => u.id.startsWith('u_classics')).every(u => u.lessons.every(l => lst(l.id).lvl > 0)) },
-    { id: 'lvl5', icon: '🏆', name: 'Magister', desc: 'Take any lesson to level 5', test: () => Object.values(save.lessons).some(l => l.lvl >= 5) },
-    { id: 'arena_20', icon: '⚔️', name: 'Gladiātor', desc: 'Score 20 in the Accent Arena', test: () => save.records.arenaBest >= 20 },
-    { id: 'arena_40', icon: '🦁', name: 'Victor', desc: 'Score 40 in the Accent Arena', test: () => save.records.arenaBest >= 40 },
-    { id: 'all_done', icon: '🏛️', name: 'Rōma victa', desc: 'Finish every lesson in the course', test: () => ALL_LESSONS.every(x => lst(x.l.id).lvl > 0) },
+    { id: 'lvl5', icon: '🏆', name: 'Magister', desc: 'Take any lesson to level 5', test: () => ALL_LESSONS.some(x => lst(x.l.id).lvl >= 5) },
+    { id: 'arena_20', icon: '⚔️', name: 'Gladiātor', desc: 'Score 20 in the Accent Arena', test: () => save.records.arenaBest >= 20, prog: () => [save.records.arenaBest, 20] },
+    { id: 'arena_40', icon: '🦁', name: 'Victor', desc: 'Score 40 in the Accent Arena', test: () => save.records.arenaBest >= 40, prog: () => [save.records.arenaBest, 40] },
+    { id: 'all_done', icon: '🏛️', name: 'Opus perfectum', desc: 'Finish every lesson in the course', test: () => ALL_LESSONS.every(x => lst(x.l.id).lvl > 0) },
     { id: 'backup', icon: '💾', name: 'Tabellārius', desc: 'Save your progress to a file or code', test: () => save.lastExportAt > 0 }
   ];
+  // ================= daily quests =================
+  // Stored in save.ext.daily (ext = free space, see AGENTS.md). Resets each day.
+  const QUESTS = {
+    xp: { icon: '⭐', text: () => `Earn ${save.profile.dailyGoal} XP`, val: () => S.xpToday(save), goal: () => save.profile.dailyGoal },
+    stress: { icon: '🎯', text: () => 'Get 15 stress answers right', val: d => d.stress, goal: () => 15 },
+    perfect: { icon: '💎', text: () => 'Finish a lesson with no mistakes', val: d => d.perfect, goal: () => 1 },
+    lessons: { icon: '🎓', text: () => 'Complete 2 lessons', val: d => d.lessons, goal: () => 2 },
+    quote: { icon: '📜', text: () => 'Translate a classical quote', val: d => d.quote, goal: () => 1 },
+    arena: { icon: '⚔️', text: () => 'Score 10+ in the Accent Arena', val: d => d.arena, goal: () => 10 }
+  };
+  function daily() {
+    const today = S.dayKey();
+    let d = save.ext.daily;
+    if (!d || typeof d !== 'object' || d.day !== today) {
+      d = save.ext.daily = { day: today, stress: 0, perfect: 0, lessons: 0, quote: 0, arena: 0, claimed: {} };
+    }
+    if (!d.claimed || typeof d.claimed !== 'object') d.claimed = {};
+    return d;
+  }
+  function todaysQuests() {
+    // xp quest + 2 others chosen deterministically from the date (same on every device)
+    const others = ['stress', 'perfect', 'lessons', 'quote', 'arena'];
+    let h = 0; for (const ch of S.dayKey()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    const a = others[h % 5], b = others[(h % 5 + 1 + (h >> 3) % 4) % 5];
+    return ['xp', a, b];
+  }
+  function dailyBump(field, n = 1, max) {
+    const d = daily();
+    d[field] = max ? Math.max(Number(d[field]) || 0, n) : (Number(d[field]) || 0) + n;
+  }
+  function checkQuests() {
+    const d = daily(), qs = todaysQuests();
+    qs.forEach((id, i) => {
+      const q = QUESTS[id];
+      if (!d.claimed[id] && q.val(d) >= q.goal()) {
+        d.claimed[id] = 1; S.addXP(save, DEVICE, 10);
+        setTimeout(() => { Sfx.play('ach'); toast(`<span class="ti">🎁</span><div><b>Quest complete!</b> +10 XP<br><small>${q.text()}</small></div>`, 3500); }, 400 + i * 700);
+      }
+    });
+    if (!d.claimed.all && qs.every(id => d.claimed[id])) {
+      d.claimed.all = 1; S.addXP(save, DEVICE, 20);
+      setTimeout(() => { Sfx.play('done'); toast('<span class="ti">🏺</span><div><b>All quests done!</b> Bonus chest +20 XP</div>', 4000); }, 2200);
+    }
+  }
+  function questsHTML() {
+    const d = daily();
+    return `<div class="card quests"><h2 class="h2">🗓️ Daily quests</h2>${todaysQuests().map(id => {
+      const q = QUESTS[id], v = Math.min(q.val(d), q.goal()), g = q.goal(), done = !!d.claimed[id];
+      return `<div class="quest ${done ? 'done' : ''}"><span class="qi">${done ? '✅' : q.icon}</span><div class="qb"><div>${q.text()}</div><div class="qbar"><i style="width:${v / g * 100}%"></i></div></div><span class="qv">${v}/${g}</span></div>`;
+    }).join('')}<p class="muted small">Each quest +10 XP · all three → 🏺 +20 XP</p></div>`;
+  }
+
   function checkAchievements() {
     const got = [];
     for (const a of ACH) if (!save.achievements[a.id] && a.test()) { save.achievements[a.id] = Date.now(); got.push(a); }
@@ -254,6 +353,13 @@
       $('button', b).onclick = () => go('profile');
       scr.appendChild(b);
     }
+    const due = dueIds();
+    if (due.length >= 3) {
+      const b = el(`<div class="banner review">🔁 <b>${due.length} words</b> are due for review — keep them fresh! <button class="btn small primary">Review</button></div>`);
+      $('button', b).onclick = () => startLesson(null, 'review');
+      scr.appendChild(b);
+    }
+    if (S.totalXP(save) > 0) scr.appendChild(el(questsHTML()));
     let k = 0;
     const firstOpen = ALL_LESSONS.find(x => unlocked(x.l.id) && lst(x.l.id).lvl === 0);
     UNITS.forEach(u => {
@@ -273,14 +379,14 @@
             <span class="nicon">${open ? l.icon || '⭐' : '🔒'}</span>
             ${hasQuote ? '<span class="qbadge">📜</span>' : ''}
           </button>
-          <div class="crowns">${s.lvl > 0 ? '★'.repeat(s.lvl) + '☆'.repeat(5 - s.lvl) : ''}</div>
+          <div class="crowns">${s.lvl > 0 ? '★'.repeat(Math.min(5, s.lvl)) + '☆'.repeat(Math.max(0, 5 - s.lvl)) : ''}</div>
           <div class="nlabel">${esc(l.title)}</div></div>`);
         $('.node', n).onclick = () => { Sfx.play('tap'); lessonPopup(u, l); };
         path.appendChild(n);
       });
       scr.appendChild(sec);
     });
-    scr.appendChild(el(`<div class="endnote">🏛️ More units coming — <i>Rōma nōn ūnō diē aedificāta est.</i></div>`));
+    scr.appendChild(el(`<div class="endnote">🏛️ More units coming — <i>Rōma nōn ūnō diē aedificāta est</i> <span class="muted">(medieval proverb)</span></div>`));
     if (firstOpen) setTimeout(() => { const n = $('.node.next'); n && n.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 50);
   }
   async function lessonPopup(u, l) {
@@ -295,7 +401,14 @@
     if (open) btns.push({ label: s.lvl >= 5 ? 'Practise ★' : s.lvl > 0 ? `Level up → ${s.lvl + 1}` : 'Start', primary: true, value: 'go' });
     const r = await modal(html, btns);
     if (r === 'tip') { await modal(`<div class="tip">${l.tip}</div>`, [{ label: 'Got it', primary: true }]); lessonPopup(u, l); }
-    if (r === 'go') startLesson(l);
+    if (r === 'go') {
+      // first time: show the rules before the lesson (they ARE the teaching)
+      if (s.lvl === 0 && l.tip) {
+        const t = await modal(`<div class="tip">${l.tip}</div>`, [{ label: 'Back', value: 0 }, { label: 'Start lesson', primary: true, value: 1 }]);
+        if (t !== 1) return;
+      }
+      startLesson(l);
+    }
   }
 
   // ================= exercise generation =================
@@ -312,13 +425,15 @@
       const dw = WORDS[d];
       if (meanings(dw).some(x => m.has(x))) continue;
       if (L.normLatin(dw.la) === L.normLatin(w.la)) continue;
-      if (mode === 'img' && (dw.img === w.img || res.some(r => WORDS[r].img === dw.img))) continue;
+      if (mode === 'img' && (dw.img === w.img || !canPic(d) || (w.grp && dw.grp === w.grp) || res.some(r => WORDS[r].img === dw.img))) continue;
       if (res.some(r => WORDS[r].en === dw.en)) continue;
       res.push(d); if (res.length >= n) break;
     }
     return res;
   }
+  const canPic = id => !WORDS[id].nopic && !WORDS[id].proper;
   function mk(type, id, pool) {
+    if (type === 'pic' && !canPic(id)) type = 'la2en';
     const ex = { type, id };
     if (['pic', 'la2en', 'en2la', 'listen'].includes(type)) ex.opts = shuffle([id, ...distractors(id, 3, pool, type === 'pic' ? 'img' : '')]);
     return ex;
@@ -347,37 +462,58 @@
     const words = lesson.words.filter(id => WORDS[id]);
     const pool = wordPool(words);
     const head = [], mid = [];
+    const quiz = words.filter(id => !WORDS[id].proper); // names get stress drills, not translation quizzes
     for (const id of words) {
       if (!save.words[id] || lvl === 0) head.push({ type: 'teach', id });
-      if (lvl === 0 || Math.random() < 0.5) head.push(mk(Math.random() < 0.55 ? 'pic' : 'la2en', id, pool));
+      if (WORDS[id].proper) continue;
+      if (lvl === 0 || Math.random() < 0.5) head.push(mk(canPic(id) && Math.random() < 0.6 ? 'pic' : 'la2en', id, pool));
     }
     (lesson.pairs || []).forEach(p => mid.push({ type: 'macron', pair: p, target: pick(p) }));
-    const nStress = lesson.focus === 'stress' ? 5 : 2;
-    stressCandidates(words, lesson.sentences).slice(0, nStress).forEach((w, i) => mid.push({ type: i % 2 ? 'stressPick' : 'stressTap', word: w }));
-    shuffle(words).slice(0, 4).forEach(id => mid.push(mk(lvl >= 2 && Math.random() < 0.5 ? 'type' : 'en2la', id, pool)));
-    if (lvl >= 1) shuffle(words).slice(0, 2).forEach(id => mid.push(mk('type', id, pool)));
-    if (pool.length >= 5) mid.push({ type: 'match', ids: matchSet([...shuffle(words), ...shuffle(learnedIds())]) });
-    if (Voice.available() && save.settings.listening) shuffle(words).slice(0, lvl >= 1 ? 2 : 1).forEach(id => mid.push(mk('listen', id, pool)));
+    const cands = stressCandidates(words, lesson.sentences);
+    const has3 = cands.some(w => L.analyze(w).n >= 3);
+    const nStress = lesson.focus === 'stress' ? (has3 ? 5 : 3) : 2;
+    cands.slice(0, nStress).forEach((w, i) => mid.push({ type: i % 2 ? 'stressPick' : 'stressTap', word: w }));
+    const three = cands.filter(w => L.analyze(w).n >= 3);
+    if (lesson.focus === 'stress' && three.length) shuffle(three).slice(0, 2).forEach(w => mid.push({ type: 'weigh', word: w }));
+    if (Voice.canForce() && three.length) mid.push({ type: 'stressHear', word: pick(three) });
+    shuffle(quiz).slice(0, 4).forEach(id => mid.push(mk(lvl >= 2 && Math.random() < 0.5 ? 'type' : 'en2la', id, pool)));
+    if (lvl >= 1) shuffle(quiz).slice(0, 2).forEach(id => mid.push(mk('type', id, pool)));
+    if (pool.length >= 5) mid.push({ type: 'match', ids: matchSet([...shuffle(quiz), ...shuffle(learnedIds().filter(id => !WORDS[id].proper))]) });
+    if (Voice.available() && save.settings.listening) shuffle(quiz).slice(0, lvl >= 1 ? 2 : 1).forEach(id => mid.push(mk('listen', id, pool)));
     shuffle(lesson.sentences || []).slice(0, 4).forEach((s, i) => mid.push({ type: (i + lvl) % 2 ? 'buildLa' : 'buildEn', s }));
-    learnedIds().filter(id => !words.includes(id)).sort((a, b) => wordEff(a) - wordEff(b)).slice(0, 2)
+    learnedIds().filter(id => !words.includes(id) && !WORDS[id].proper).sort((a, b) => wordEff(a) - wordEff(b)).slice(0, 2)
       .forEach(id => mid.push(mk(pick(['la2en', 'en2la']), id, pool)));
     // match must have >= 4 items
     const fixed = mid.filter(x => x.type !== 'match' || x.ids.length >= 4);
     // sentences tend to come later
+    // from level 3 on, stress marks are hidden in prompts and options: recall, not recognition
+    if (lvl >= 3) fixed.forEach(x => { x.plain = true; });
     const early = shuffle(fixed.filter(x => !x.s)), late = shuffle(fixed.filter(x => x.s));
     return [...head, ...early.slice(0, Math.ceil(early.length / 2)), ...shuffle([...early.slice(Math.ceil(early.length / 2)), ...late])];
   }
-  function buildPractice(kind) {
+  function buildPractice(kind, extra) {
+    if (kind === 'custom') return extra.slice(); // debug/testing: run exact exercise objects
+    if (kind === 'missed') return shuffle(extra).map((w, i) => ({ type: i % 2 ? 'stressPick' : 'stressTap', word: w }));
+    if (kind === 'mistakes') {
+      const p = wordPool(extra.words);
+      return shuffle([...extra.words.map(id => mk(pick(['la2en', 'en2la', 'type']), id, p)), ...extra.stress.map(w => ({ type: 'stressTap', word: w }))]);
+    }
+    if (kind === 'review') {
+      const ids = dueIds().slice(0, 10), p = wordPool(ids);
+      const items = ids.map(id => mk(pick(Voice.available() ? ['la2en', 'en2la', 'type', 'listen', 'pic'] : ['la2en', 'en2la', 'type', 'pic']), id, p));
+      if (ids.length >= 4) items.push({ type: 'match', ids: matchSet(ids) });
+      return shuffle(items);
+    }
     const learned = learnedIds();
     const pool = wordPool();
     if (kind === 'stress') {
       const src = learned.length >= 6 ? stressCandidates(learned, doneSentences()) : shuffle(allStressWords());
-      return shuffle(src).slice(0, 12).map((w, i) => ({ type: i % 3 === 2 ? 'stressPick' : 'stressTap', word: w }));
+      return shuffle(src).slice(0, 12).map((w, i) => ({ type: L.analyze(w).n >= 3 && i % 4 === 3 ? 'weigh' : i % 3 === 2 ? 'stressPick' : 'stressTap', word: w }));
     }
     if (kind === 'sentences') {
       return shuffle(doneSentences()).slice(0, 8).map((s, i) => ({ type: i % 2 ? 'buildLa' : 'buildEn', s }));
     }
-    const weak = learned.sort((a, b) => wordEff(a) - wordEff(b)).slice(0, 8);
+    const weak = learned.filter(id => !WORDS[id].proper).sort((a, b) => wordEff(a) - wordEff(b)).slice(0, 8);
     const items = weak.map(id => mk(pick(Voice.available() ? ['la2en', 'en2la', 'type', 'listen', 'pic'] : ['la2en', 'en2la', 'type', 'pic']), id, pool));
     stressCandidates(weak).slice(0, 2).forEach(w => items.push({ type: 'stressTap', word: w }));
     if (weak.length >= 4) items.push({ type: 'match', ids: matchSet(weak) });
@@ -387,18 +523,21 @@
 
   // ================= lesson runner =================
   const PRAISE = [['Optimē!', 'excellent'], ['Bene!', 'good'], ['Euge!', 'bravo'], ['Rēctē!', 'correct'], ['Mīrābile!', 'wonderful'], ['Pulchrē!', 'beautiful'], ['Ita vērō!', 'yes indeed']];
-  const OOPS = [['Paene!', 'almost'], ['Nōn rēctē', 'not right'], ['Iterum temptā', 'try again later']];
+  const OOPS = [['Nōn rēctē', 'not right'], ['Errāre hūmānum est', 'to err is human'], ['Iterum temptā', 'try again']];
+  const NEAR = ['Paene!', 'almost'];
   const Run = { active: false };
 
-  function startLesson(lesson, practiceKind) {
-    const items = practiceKind ? buildPractice(practiceKind) : buildLesson(lesson);
+  function startLesson(lesson, practiceKind, extra) {
+    const items = practiceKind ? buildPractice(practiceKind, extra) : buildLesson(lesson);
     if (!items.length) { toast('Nothing to practise yet — finish a lesson first!'); return; }
-    Object.assign(Run, { active: true, lesson, practiceKind, queue: items, done: 0, firstTry: 0, mistakes: 0, combo: 0, maxCombo: 0, t0: Date.now(), cur: null, state: 'answer', handle: null });
+    $$('#lesson').forEach(x => x.remove()); // never two lesson screens at once
+    Run.id = (Run.id || 0) + 1;
+    Object.assign(Run, { active: true, lesson, practiceKind, missedWords: new Set(), missedStress: new Set(), queue: items, done: 0, firstTry: 0, mistakes: 0, combo: 0, maxCombo: 0, t0: Date.now(), cur: null, state: 'answer', handle: null });
     $('#app').classList.add('in-lesson');
     const ls = el(`<div id="lesson">
       <header class="lhead"><button class="x" aria-label="Quit">✕</button><div class="bar"><div class="fill"></div></div><div class="combo"></div></header>
       <main id="lbody"></main>
-      <footer id="lfoot" class="lfoot"><div id="lfb"></div><div class="row"><button id="lskip" class="btn ghost">Skip</button><button id="lgo" class="btn primary">Check</button></div></footer>
+      <footer id="lfoot" class="lfoot"><div id="lfb" aria-live="polite"></div><div class="row"><button id="lskip" class="btn ghost">Skip</button><button id="lgo" class="btn primary">Check</button></div></footer>
     </div>`);
     document.body.appendChild(ls);
     $('.x', ls).onclick = async () => {
@@ -428,6 +567,7 @@
     const teach = Run.cur.type === 'teach';
     go.textContent = teach ? 'Continue' : 'Check'; go.disabled = !teach;
     skip.style.visibility = teach || Run.cur.type === 'match' ? 'hidden' : 'visible';
+    go.style.visibility = Run.cur.type === 'match' ? 'hidden' : 'visible';
     const api = {
       ready: on => { if (Run.state === 'answer') go.disabled = !on; },
       done: res => feedback(res),
@@ -448,24 +588,30 @@
     const ex = Run.cur, ok = !!res.ok;
     (res.words || (ex.id ? [ex.id] : [])).forEach(id => recordWord(id, ok));
     S.bump(save, DEVICE, ok ? 'correct' : 'wrong');
-    if (ok && (ex.type === 'stressTap' || ex.type === 'stressPick')) S.bump(save, DEVICE, 'stress');
+    const isStress = ['stressTap', 'stressPick', 'weigh', 'stressHear'].includes(ex.type);
+    if (ok && isStress) { S.bump(save, DEVICE, 'stress'); dailyBump('stress'); }
+    if (ok && ex.s && ex.s.src) dailyBump('quote');
+    if (!ok) { if (isStress) Run.missedStress.add(ex.word); else if (ex.id && isWord(ex.id)) Run.missedWords.add(ex.id); }
     if (ok) {
       Run.done++; Run.combo++; Run.maxCombo = Math.max(Run.maxCombo, Run.combo);
       if (!ex.retry) Run.firstTry++;
       Sfx.play(Run.combo % 5 === 0 ? 'combo' : 'ok');
     } else {
       Run.combo = 0; Run.mistakes++; Sfx.play('bad');
-      const copy = Object.assign({}, ex, { retry: true });
-      if (copy.opts) copy.opts = shuffle(copy.opts);
+      if (navigator.vibrate) try { navigator.vibrate(40); } catch (e) { /* ignore */ }
+      let copy = Object.assign({}, ex, { retry: true });
+      // retry with fresh options (and pic → en2la) so it can't be memorised by position
+      if (copy.opts && copy.id) copy = Object.assign(mk(copy.type === 'pic' ? 'en2la' : copy.type, copy.id, wordPool([copy.id])), { retry: true });
       Run.queue.splice(Math.min(Run.queue.length, 2 + Math.floor(Math.random() * 3)), 0, copy);
     }
-    const [t, tr] = ok ? pick(PRAISE) : pick(OOPS);
+    const [t, tr] = ok ? pick(PRAISE) : res.near ? NEAR : pick(OOPS);
     const foot = $('#lfoot');
     foot.className = 'lfoot ' + (ok ? 'ok' : 'bad');
     $('#lfb').innerHTML = `<div class="fbt">${ok ? '✓' : '✗'} ${t} <small>(${tr})</small>${Run.combo >= 5 && ok ? ` <span class="cflame">🔥 ${Run.combo} combo!</span>` : ''}</div>${res.html ? `<div class="fbd">${res.html}</div>` : ''}`;
-    $('#lgo').textContent = 'Continue'; $('#lgo').disabled = false;
+    $('#lgo').textContent = 'Continue'; $('#lgo').disabled = false; $('#lgo').style.visibility = 'visible';
     $('#lskip').style.visibility = 'hidden';
     $('#lbody').classList.add('locked');
+    if (ok) { const f = $('#lesson .fill'); f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash'); }
     if (res.say) Voice.speak(res.say);
     updateBar();
   }
@@ -474,12 +620,19 @@
     const acc = Math.round((Run.firstTry / scored) * 100);
     const perfect = Run.mistakes === 0;
     const comboBonus = Math.floor(Run.maxCombo / 5) * 2;
-    const xp = 10 + Run.firstTry + comboBonus + (perfect ? 5 : 0);
+    // practice/drills: base XP scales with length so 1-question runs can't be farmed
+    const real = !!(Run.lesson && !Run.practiceKind);
+    const base = real ? 10 : Math.min(10, Run.done);
+    const perfectBonus = perfect && Run.done >= 6 ? 5 : 0;
+    const xp = base + Run.firstTry + comboBonus + perfectBonus;
     const before = S.xpToday(save), goal = save.profile.dailyGoal;
     const lvBefore = levelInfo(S.totalXP(save)).lvl;
     S.addXP(save, DEVICE, xp);
-    S.bump(save, DEVICE, 'lessons');
-    if (perfect) S.bump(save, DEVICE, 'perfect');
+    if (real) {
+      S.bump(save, DEVICE, 'lessons'); dailyBump('lessons');
+      if (perfect) { S.bump(save, DEVICE, 'perfect'); dailyBump('perfect'); }
+    }
+    checkQuests();
     let lvlUp = null;
     if (Run.lesson && !Run.practiceKind) {
       const s = save.lessons[Run.lesson.id] || (save.lessons[Run.lesson.id] = { lvl: 0, best: 0, last: 0, n: 0 });
@@ -506,15 +659,27 @@
         <div class="rc purple"><small>BEST COMBO</small><b>🔥${Run.maxCombo}</b></div>
         <div class="rc blue"><small>TIME</small><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b></div>
       </div>
-      <div class="xpbreak muted">10 lesson + ${Run.firstTry} answers${comboBonus ? ` + ${comboBonus} combo` : ''}${perfect ? ' + 5 perfect' : ''}</div>
-      ${lvlUp ? `<div class="lvup">Lesson level ${lvlUp}/5 <span>${'★'.repeat(lvlUp)}${'☆'.repeat(5 - lvlUp)}</span></div>` : ''}
-      ${lvAfter > lvBefore ? `<div class="lvup big">⬆️ Level ${lvAfter} — ${rankOf(lvAfter)[1]} <small>(${rankOf(lvAfter)[2]})</small></div>` : ''}
+      <div class="xpbreak muted">${base} ${real ? 'lesson' : 'practice'} + ${Run.firstTry} answers${comboBonus ? ` + ${comboBonus} combo` : ''}${perfectBonus ? ' + 5 perfect' : ''}</div>
+      ${Run.missedWords.size + Run.missedStress.size ? '<button class="btn" id="revmist">🔁 Review my mistakes</button>' : ''}
       ${goalHit ? `<div class="lvup goal">🎯 Daily goal reached! 🔥 Streak: ${S.streak(save)} day${S.streak(save) === 1 ? '' : 's'}</div>` : ''}
+      ${lvlUp ? `<div class="lvup">Lesson level ${lvlUp}/5 <span>${'★'.repeat(Math.min(5, lvlUp))}${'☆'.repeat(Math.max(0, 5 - lvlUp))}</span></div>` : ''}
+      ${lvAfter > lvBefore ? `<div class="lvup big">⬆️ Level ${lvAfter} — ${rankOf(lvAfter)[1]} <small>(${rankOf(lvAfter)[2]})</small></div>` : ''}
     </div>`;
     const c = $('.count'); let v = 0; const step = () => { v = Math.min(xp, v + Math.ceil(xp / 25)); c.textContent = '+' + v; if (v < xp) requestAnimationFrame(step); }; step();
     Run.state = 'feedback';
+    const mist = { words: [...Run.missedWords], stress: [...Run.missedStress] };
+    const rv = $('#revmist'); if (rv) rv.onclick = () => startLesson(null, 'mistakes', mist);
     $('#lgo').textContent = 'Continue'; $('#lgo').disabled = false;
-    $('#lgo').onclick = endLesson;
+    let leaving = false;
+    $('#lgo').onclick = async () => {
+      if (leaving) return; leaving = true;
+      if (goalHit) {
+        const n = S.streak(save);
+        Sfx.play('ach');
+        await modal(`<div class="center streakscr"><div class="bigflame">🔥</div><div class="snum">${n}</div><h2>day streak!</h2><p class="muted">Daily goal reached. Come back tomorrow to keep the fire burning — <i>nūlla diēs sine līneā</i> <small>(after Pliny)</small>.</p></div>`, [{ label: 'Continue', primary: true }]);
+      }
+      endLesson();
+    };
   }
 
   // ================= exercise renderers =================
@@ -540,8 +705,32 @@
     const ol = optionList(body, ex.opts, render, () => api.ready(true));
     if (cls) $('.opts', body).classList.add(cls);
     const right = ex.opts.indexOf(ex.id);
-    const resolve = ok => { ol.mark(right); return { ok, html: wordFeedback(ex.id), say: WORDS[ex.id].la }; };
+    const resolve = ok => {
+      ol.mark(right);
+      const sel = ol.get();
+      let you = '';
+      if (!ok && sel >= 0 && ex.opts[sel] !== ex.id) { const o = WORDS[ex.opts[sel]]; you = `<div class="you">You chose: ${o.img} ${wordHTML(o.la, { dots: false })} = ${esc(o.en)}</div>`; }
+      return { ok, html: you + wordFeedback(ex.id), say: WORDS[ex.id].la };
+    };
     return { check: () => resolve(ol.get() === right), reveal: () => resolve(false) };
+  }
+  function lev(a, b) {
+    const d = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++)
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  }
+  /** Why the learner's chosen stress is wrong (in terms of the rule). */
+  function stressWhy(a, sel) {
+    if (sel < 0 || sel === a.stress) return '';
+    let why;
+    if (sel === a.n - 1) why = 'Latin never stresses the <b>last</b> syllable of a longer word.';
+    else if (sel < a.n - 3) why = 'Stress never goes further back than the <b>third syllable from the end</b>.';
+    else if (a.enclitic) why = 'The enclitic pulls the stress onto the syllable <b>right before it</b>.';
+    else if (sel === a.n - 2) why = 'The penult is <b>light</b>, so it can\'t hold the stress.';
+    else why = 'The penult is <b>heavy</b>, so it grabs the stress.';
+    return `<div class="you">You stressed <b>${esc(a.syllables[sel].text)}</b>. ${why}</div>`;
   }
 
   const EX = {
@@ -559,19 +748,19 @@
     },
     pic(ex, body, api) {
       const w = WORDS[ex.id];
-      return choiceEx(ex, body, api, `<div class="ttl">Which one is <span class="big">${wordHTML(w.la)}</span> ${speakBtn(w.la)}</div>`,
+      return choiceEx(ex, body, api, `<div class="ttl">Which one is <span class="big">${wordHTML(w.la, { plain: ex.plain })}</span> ${speakBtn(w.la)}</div>`,
         id => `<span class="pimg">${WORDS[id].img}</span>`, 'grid');
     },
     la2en(ex, body, api) {
       const w = WORDS[ex.id];
       setTimeout(() => Voice.speak(w.la), 200);
-      return choiceEx(ex, body, api, `<div class="ttl">What does this mean?</div><div class="prompt">${wordHTML(w.la)} ${speakBtn(w.la)}</div>`,
+      return choiceEx(ex, body, api, `<div class="ttl">What does this mean?</div><div class="prompt">${wordHTML(w.la, { plain: ex.plain })} ${speakBtn(w.la)}</div>`,
         id => esc(WORDS[id].en));
     },
     en2la(ex, body, api) {
       const w = WORDS[ex.id];
       return choiceEx(ex, body, api, `<div class="ttl">How do you say this in Latin?</div><div class="prompt">${w.img} “${esc(w.en)}”</div>`,
-        id => wordHTML(WORDS[id].la, { dots: false }));
+        id => wordHTML(WORDS[id].la, { dots: false, plain: ex.plain }));
     },
     listen(ex, body, api) {
       const w = WORDS[ex.id];
@@ -597,12 +786,17 @@
       const resolve = ok => {
         const v = inp.value;
         const exact = L.normLatin(v, true) === L.normLatin(w.la, true);
-        const okk = ok !== false && L.normLatin(v) === L.normLatin(w.la);
+        const plain = L.normLatin(v), target = L.normLatin(w.la);
+        const dist = lev(plain, target);
+        const typo = ok !== false && plain !== target && dist === 1 && target.length >= 4;
+        const okk = ok !== false && (plain === target || typo);
         inp.classList.add(okk ? 'right' : 'wrong'); inp.disabled = true;
         let note = '';
-        if (okk && exact && /[āēīōū]/i.test(w.la)) note = '<div>✨ Perfect macrons!</div>';
+        if (typo) note = `<div>Almost — watch the spelling: <b>${esc(w.la)}</b> (you wrote “${esc(v.trim())}”)</div>`;
+        else if (okk && exact && /[āēīōū]/i.test(w.la)) note = '<div>✨ Perfect macrons!</div>';
         else if (okk && !exact) note = `<div>Mind the long vowels: <b>${esc(w.la)}</b></div>`;
-        return { ok: okk, html: note + wordFeedback(ex.id), say: w.la };
+        else if (!okk && v.trim()) note = `<div class="you">Your answer: “${esc(v.trim())}”</div>`;
+        return { ok: okk, near: !okk && !!v.trim() && dist <= 2, html: note + wordFeedback(ex.id), say: w.la };
       };
       return { check: () => resolve(), reveal: () => resolve(false) };
     },
@@ -621,7 +815,7 @@
       Run.selectIndex = i => { const b = $$('.sylb', wrap)[i]; b && b.click(); };
       const resolve = ok => {
         $$('.sylb', wrap).forEach((b, i) => { if (i === a.stress) b.classList.add('right'); else if (i === sel) b.classList.add('wrong'); });
-        return { ok, html: `<div class="fw">${wordHTML(ex.word)} <span class="muted">[${esc(L.respell(ex.word))}]</span></div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, say: ex.word, words: id ? [id] : [] };
+        return { ok, html: `${ok ? '' : stressWhy(a, sel)}<div class="fw">${wordHTML(ex.word)} <span class="muted">[${esc(L.respell(ex.word))}]</span></div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, say: ex.word, words: id ? [id] : [] };
       };
       return { check: () => resolve(sel === a.stress), reveal: () => resolve(false) };
     },
@@ -634,8 +828,29 @@
         <div class="prompt">${esc(a.display)}</div>
         ${id ? `<div class="muted center">${WORDS[id].img} ${esc(WORDS[id].en)}</div>` : ''}`;
       const ol = optionList(body, opts, i => `<span class="resp">${esc(respellAt(ex.word, i))}</span>`, () => api.ready(true));
-      const resolve = ok => { ol.mark(opts.indexOf(a.stress)); return { ok, html: `<div class="fw">${wordHTML(ex.word)}</div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, say: ex.word, words: id ? [id] : [] }; };
+      const resolve = ok => { ol.mark(opts.indexOf(a.stress)); return { ok, html: `${ok ? '' : stressWhy(a, ol.get() >= 0 ? opts[ol.get()] : -1)}<div class="fw">${wordHTML(ex.word)}</div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, say: ex.word, words: id ? [id] : [] }; };
       return { check: () => resolve(opts[ol.get()] === a.stress), reveal: () => resolve(false) };
+    },
+    weigh(ex, body, api) {
+      const a = L.analyze(ex.word), p = a.syllables[a.n - 2], heavy = p.heavy;
+      body.innerHTML = `<div class="ttl">Is the <span class="hl">penult</span> heavy or light?</div>
+        <div class="prompt">${a.syllables.map((x, i) => i === a.n - 2 ? `<span class="pen">${esc(x.text)}</span>` : esc(x.text)).join('<span class="dot">·</span>')}</div>
+        <p class="muted center small">Heavy = long vowel, diphthong, or closed by a consonant.</p>`;
+      const opts = ['heavy', 'light'];
+      const ol = optionList(body, opts, o => o === 'heavy' ? '🏋️ Heavy → it takes the stress' : '🪶 Light → stress moves back', () => api.ready(true));
+      const right = heavy ? 0 : 1;
+      const resolve = ok => { ol.mark(right); return { ok, html: `<div class="fw">${wordHTML(ex.word)} <span class="muted">[${esc(L.respell(ex.word))}]</span></div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, say: ex.word }; };
+      return { check: () => resolve(ol.get() === right), reveal: () => resolve(false) };
+    },
+    stressHear(ex, body, api) {
+      const a = L.analyze(ex.word), id = LA2WORD[a.display.toLowerCase()];
+      const idxs = shuffle([a.n - 1, a.n - 2, a.n - 3].filter(i => i >= 0));
+      body.innerHTML = `<div class="ttl">Which recording has the <span class="hl">right stress</span>?</div>
+        <div class="prompt">${esc(a.display)}</div>${id ? `<div class="muted center">${WORDS[id].img} ${esc(WORDS[id].en)}</div>` : ''}`;
+      const ol = optionList(body, idxs, (i) => `🔊 Version ${'ABC'[idxs.indexOf(i)]}`, (k) => { Voice.speakForced(ex.word, idxs[k]); api.ready(true); });
+      const resolve = ok => { ol.mark(idxs.indexOf(a.stress)); return { ok, html: `${ok ? '' : stressWhy(a, ol.get() >= 0 ? idxs[ol.get()] : -1)}<div class="fw">${wordHTML(ex.word)} [${esc(L.respell(ex.word))}]</div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, words: id ? [id] : [] }; };
+      setTimeout(() => Voice.speakForced(ex.word, idxs[0]), 300);
+      return { check: () => resolve(idxs[ol.get()] === a.stress), reveal: () => resolve(false) };
     },
     macron(ex, body, api) {
       const t = WORDS[ex.target], opts = shuffle(ex.pair);
@@ -657,9 +872,10 @@
           if (selL && selR) {
             if (selL.dataset.id === selR.dataset.id) {
               Sfx.play('tap'); [selL, selR].forEach(x => { x.classList.remove('sel'); x.classList.add('gone'); });
-              if (--left_n === 0) setTimeout(() => api.done({ ok: true, words: ex.ids, html: errs ? `${errs} mismatch${errs > 1 ? 'es' : ''} — but all pairs found!` : 'All pairs, no mismatches!' }), 250);
+              const rid = Run.id;
+              if (--left_n === 0) setTimeout(() => Run.active && Run.id === rid && Run.cur === ex && Run.state === 'answer' && api.done({ ok: true, words: ex.ids, html: errs ? `${errs} mismatch${errs > 1 ? 'es' : ''} — but all pairs found!` : 'All pairs, no mismatches!' }), 250);
             } else {
-              errs++; Sfx.play('bad'); const a = selL, c = selR;
+              errs++; Run.mistakes++; Sfx.play('bad'); Run.combo = 0; updateBar(); const a = selL, c = selR;
               [a, c].forEach(x => x.classList.add('shake'));
               setTimeout(() => [a, c].forEach(x => x.classList.remove('shake', 'sel')), 450);
             }
@@ -684,18 +900,32 @@
       .replace(/\bo\b/g, 'oh').replace(/favour/g, 'favor').replace(/[^a-z' ]+/g, ' ').split(/\s+/)
       .filter(t => t && !['a', 'an', 'the'].includes(t)).join(' ');
   }
-  let _allEn = null, _allLa = null;
+  let _allEn = null, _allLa = null, PROPER = null;
+  /** Lower-case a tile unless it is a proper noun (so capitals don't give away the first word). */
+  const tileCase = t => PROPER.has(t.toLowerCase()) ? t : t.toLowerCase();
   function allTokens() {
     if (!_allEn) {
       const sents = ALL_LESSONS.flatMap(x => x.l.sentences || []);
-      _allEn = uniq(sents.flatMap(s => enTokens(s.en)));
-      _allLa = uniq([...sents.flatMap(s => laTokens(s.la)), ...Object.values(WORDS).map(w => w.la)]);
+      PROPER = new Set(['i']);
+      Object.values(WORDS).filter(w => w.proper).forEach(w => PROPER.add(w.la.toLowerCase()));
+      sents.forEach(s => [enTokens(s.en), laTokens(s.la)].forEach(ts => ts.forEach((t, i) => { if (i > 0 && /^[A-ZĀĒĪŌŪ]/.test(t)) PROPER.add(t.toLowerCase()); })));
+      _allEn = uniq(sents.flatMap(s => enTokens(s.en)).map(tileCase)).filter(t => !['a', 'an', 'the'].includes(t));
+      _allLa = uniq([...sents.flatMap(s => laTokens(s.la)), ...Object.values(WORDS).map(w => w.la)].map(tileCase));
     }
     return { en: _allEn, la: _allLa };
   }
+  /** Latin word order is free: compare as a bag of words, keeping "nōn" glued to the next word. */
+  function laBag(str) {
+    const t = L.normLatin(str, true).split(' ').filter(Boolean), u = [];
+    for (let i = 0; i < t.length; i++) { if (t[i] === 'nōn' && i + 1 < t.length) { u.push('nōn ' + t[i + 1]); i++; } else u.push(t[i]); }
+    return u.sort().join('|');
+  }
   function buildEx(ex, body, api, target) {
     const s = ex.s;
-    const answer = target === 'en' ? enTokens(s.en) : laTokens(s.la);
+    allTokens();
+    // English tiles come from a random accepted translation, so alternatives are buildable too
+    const enModel = target === 'en' ? pick([s.en, ...(s.alt || [])]) : s.en;
+    const answer = (target === 'en' ? enTokens(enModel) : laTokens(s.la)).map(tileCase);
     const lc = new Set(answer.map(x => x.toLowerCase()));
     const pool = (target === 'en' ? allTokens().en : allTokens().la).filter(t => !lc.has(t.toLowerCase()));
     const tiles = shuffle([...answer, ...shuffle(pool).slice(0, Math.min(4, Math.max(2, 7 - answer.length)))]);
@@ -724,9 +954,16 @@
       let ok;
       if (target === 'en') ok = [s.en, ...(s.alt || [])].some(a => normEN(a) === normEN(user()));
       else ok = [s.la, ...(s.altLa || [])].some(a => L.normLatin(a, true) === L.normLatin(user(), true));
+      let note = '';
+      if (!ok && !forceWrong && target === 'la' && laBag(user()) === laBag(s.la)) {
+        ok = true;
+        note = s.src ? `<div>✓ Right words! But the famous line goes in this order:</div>` : `<div>✓ Also good Latin — word order is free. The model order:</div>`;
+      }
       if (forceWrong) ok = false;
-      const html = `<div class="fs">${textHTML(s.la)}</div><div>${esc(s.en)}</div>${srcBadge(s)}`;
-      const words = laTokens(s.la).map(t => LA2WORD[t.toLowerCase()]).filter(Boolean);
+      const you = !ok && user() ? `<div class="you">Your answer: “${esc(user())}”</div>` : '';
+      const html = `${you}${note}<div class="fs">${textHTML(s.la)}</div><div>${esc(s.en)}</div>${srcBadge(s)}${s.note ? `<div class="gnote">💡 ${s.note}</div>` : ''}`;
+      // only words already met count as practised (sentence words aren't "learned" before being taught)
+      const words = laTokens(s.la).map(t => LA2WORD[t.toLowerCase()]).filter(id => id && save.words[id]);
       return { ok, html, say: s.la, words: ok ? words : [] };
     };
     return { check: () => resolve(false), reveal: () => resolve(true) };
@@ -735,6 +972,7 @@
   // keyboard
   document.addEventListener('keydown', e => {
     if (!Run.active) return;
+    if (document.querySelector('.modal-bg')) return; // a dialog is open: don't act behind it
     if (e.target.tagName === 'INPUT') return;
     if (e.key === 'Enter') { e.preventDefault(); $('#lgo') && !$('#lgo').disabled && $('#lgo').click(); }
     else if (/^[1-9]$/.test(e.key) && Run.state === 'answer' && Run.selectIndex) Run.selectIndex(+e.key - 1);
@@ -747,10 +985,12 @@
     scr.innerHTML = `<h1 class="h1">🔁 Practice</h1>
       <p class="muted">Unlimited — practise as much as you like. Words fade over time; practice brings them back.</p>
       <div class="pcards">
+        <button class="pcard ${dueIds().length ? 'hot' : ''}" data-p="review"><span>⏰</span><b>Due review</b><small>${dueIds().length} word${dueIds().length === 1 ? '' : 's'} due now</small></button>
         <button class="pcard" data-p="weak"><span>🧠</span><b>Weak words</b><small>Your ${Math.min(8, ids.length)} faintest words</small></button>
         <button class="pcard" data-p="stress"><span>🎯</span><b>Stress drill</b><small>12 accent questions</small></button>
         <button class="pcard" data-p="sentences"><span>📜</span><b>Sentences</b><small>From finished lessons</small></button>
       </div>
+      ${quotesHTML()}
       <h2 class="h2">Lexicon <span class="muted">(${ids.length} words)</span></h2>
       <div class="lex">${sorted.map(id => {
         const w = WORDS[id], eff = Math.max(0, Math.round(wordEff(id)));
@@ -759,9 +999,20 @@
     $$('.pcard', scr).forEach(b => b.onclick = () => {
       const k = b.dataset.p;
       if (k === 'weak' && ids.length < 4) return toast('Learn at least 4 words first.');
+      if (k === 'review' && !dueIds().length) return toast('Nothing due right now — come back later! ⏰');
       if (k === 'sentences' && !doneSentences().length) return toast('Finish a lesson with sentences first.');
       startLesson(null, k);
     });
+  }
+
+  /** "Sententiae" scrapbook: every classical quote you have unlocked. */
+  function quotesHTML() {
+    const all = [], seen = new Set();
+    ALL_LESSONS.forEach(x => (x.l.sentences || []).forEach(q => { if (q.src && !seen.has(q.la)) { seen.add(q.la); all.push({ q, open: lst(x.l.id).lvl > 0 }); } }));
+    const got = all.filter(a => a.open);
+    return `<h2 class="h2">📜 Sententiae <span class="muted">(${got.length}/${all.length})</span></h2>
+      <div class="quotes">${got.map(({ q }) => `<div class="quote"><div class="qla">${textHTML(q.la)} ${speakBtn(q.la)}</div><div class="qen">“${esc(q.en)}”</div><div class="src">${esc(q.src)}</div></div>`).join('')}
+      ${all.length - got.length ? `<div class="quote locked">🔒 ${all.length - got.length} more quotes waiting in later lessons</div>` : ''}</div>`;
   }
 
   // ================= ACCENT ARENA =================
@@ -774,20 +1025,24 @@
     $('#astart').onclick = startArena;
   }
   function startArena() {
-    const pool = shuffle(allStressWords());
-    let score = 0, combo = 0, idx = 0, timeLeft = 60, busy = false, ended = false, correct = 0;
+    // mostly 3+ syllable words: 2-syllable ones are always "first syllable" and teach little
+    const allW = allStressWords(), long = allW.filter(w => L.analyze(w).n >= 3), short = allW.filter(w => L.analyze(w).n === 2);
+    const pool = shuffle([...long, ...shuffle(short).slice(0, Math.ceil(long.length / 4))]);
+    let score = 0, combo = 0, idx = 0, timeLeft = 60, busy = false, ended = false, correct = 0, paused = false, quitEarly = false;
+    const missed = [];
     $('#app').classList.add('in-lesson');
     const A = el(`<div id="lesson" class="arena"><header class="lhead"><button class="x">✕</button><div class="bar"><div class="fill tfill"></div></div><div class="combo"></div></header>
       <main id="lbody"><div class="ascore"><span>⚔️ <b id="asc">0</b></span><span>⏱ <b id="atm">60</b></span></div><div id="aword"></div></main></div>`);
     document.body.appendChild(A);
     Run.active = false;
     const tick = setInterval(() => {
+      if (paused) return;
       timeLeft -= 0.1;
       $('#atm').textContent = Math.max(0, Math.ceil(timeLeft));
       $('.tfill', A).style.width = Math.max(0, timeLeft / 60 * 100) + '%';
       if (timeLeft <= 0) end();
     }, 100);
-    $('.x', A).onclick = () => end(true);
+    $('.x', A).onclick = () => { quitEarly = true; end(true); };
     function show() {
       const w = pool[idx++ % pool.length], a = L.analyze(w), id = LA2WORD[a.display.toLowerCase()];
       const box = $('#aword');
@@ -804,11 +1059,15 @@
             if (combo % 5 === 0) { timeLeft += 1; Sfx.play('combo'); } else Sfx.play('ok');
           } else {
             combo = 0; b.classList.add('wrong'); Sfx.play('bad');
-            $('.aexp', box).innerHTML = `${wordHTML(w)} — ${L.explain(w)}`;
+            if (!missed.includes(w)) missed.push(w);
+            // the clock stops while you read why — learning beats speed
+            paused = true;
+            $('.aexp', box).innerHTML = `${stressWhy(a, i)}<div class="fw">${wordHTML(w)}</div><div class="exp">${L.explain(w)}</div><button class="btn primary anext">Next ⏵</button><div class="muted small">⏸ clock paused</div>`;
+            $('.anext', box).onclick = () => { paused = false; busy = false; if (!ended) show(); };
           }
           $('#asc').textContent = score;
           $('.combo', A).innerHTML = combo >= 3 ? `<span class="cflame">🔥 ${combo}</span>` : '';
-          setTimeout(() => { busy = false; if (!ended) show(); }, ok ? 260 : 1600);
+          if (ok) setTimeout(() => { busy = false; if (!ended) show(); }, 260);
         };
         $('.syls', box).appendChild(b);
       });
@@ -819,10 +1078,16 @@
         const best = score > save.records.arenaBest;
         if (best) save.records.arenaBest = score;
         if (score > 0) S.addXP(save, DEVICE, score);
+        dailyBump('arena', score, true); checkQuests();
         S.bump(save, DEVICE, 'stress', correct);
         checkAchievements(); commit();
         if (score > 0) { Sfx.play('done'); if (best) confetti(); }
-        await modal(`<div class="center"><div class="trophy">${best ? '🏆' : '⚔️'}</div><h2>${best ? 'New record!' : 'Time!'}</h2><p class="big">Score: <b>${score}</b></p><p class="muted">Record: ${save.records.arenaBest} · +${score} XP</p></div>`, [{ label: 'Continue', primary: true }]);
+        const r2 = await modal(`<div class="center"><div class="trophy">${best ? '🏆' : '⚔️'}</div><h2>${best ? 'New record!' : quitEarly ? 'Ended early' : 'Time!'}</h2><p class="big">Score: <b>${score}</b></p><p class="muted">Record: ${save.records.arenaBest} · +${score} XP</p>
+          ${missed.length ? `<h3>Missed (${missed.length})</h3><div class="chips">${missed.map(m => `<span class="chip">${wordHTML(m)}</span>`).join('')}</div>` : '<p>No mistakes! 🎯</p>'}</div>`,
+          missed.length ? [{ label: 'Continue', value: 0 }, { label: '🎯 Drill my mistakes', primary: true, value: 1 }] : [{ label: 'Continue', primary: true, value: 0 }]);
+        A.remove(); $('#app').classList.remove('in-lesson');
+        if (r2 === 1) { go('arena'); startLesson(null, 'missed', missed); return; }
+        go('arena'); return;
       }
       A.remove(); $('#app').classList.remove('in-lesson'); go('arena');
     }
@@ -859,6 +1124,14 @@
         ${row('v', ['vīnum', 'vēnī'], 'English W')}${row('i (cons.)', ['iam', 'maior'], 'English Y; between vowels = double')}
         ${row('qu', ['quattuor', 'aqua'], 'KW')}${row('s', ['rosa', 'silva'], 'always S, never Z')}
         ${row('x', ['sex', 'rēx'], 'KS')}${row('r', ['rēx', 'terra'], 'trilled')}
+        ${row('h', ['homō', 'mihi'], 'light breath, often weak')}
+        ${row('final -m', ['rosam', 'templum'], 'only nasalises the vowel (rosã) — in verse it elides')}
+        ${row('gn', ['magnus', 'pugnō'], '[ŋn]: "hangnail", not Italian "gn"')}
+        ${row('n + c/g', ['longus', 'quīnque'], '[ŋ] as in "finger"')}
+        ${row('ph th ch', ['Philologus', 'theātrum'], 'aspirated p, t, k (p-h) — not f / th')}
+        ${row('y', ['lyra'], 'French "u" / German "ü" (Greek words)')}
+        ${row('z', ['zōna'], '[dz] (Greek words)')}
+        ${row('eu, ui', ['heu', 'huic'], 'rare diphthongs: e+u, u+i in one syllable')}
         ${row('bb, ll, tt…', ['puella', 'terra'], 'double = held longer')}</table></div>
       <div class="card"><h2 class="h2">🔊 Audio</h2><p class="muted">Browsers have no Latin voice, so Latinum feeds a <b>Spanish or Italian</b> voice a respelled text with a written accent on the stressed vowel — this forces the correct stress. It's an approximation (long vowels are not audible). The visual marks and respellings are the reference.</p>
         <p>Current voice: <b>${Voice.chosen() ? esc(Voice.chosen().name + ' (' + Voice.chosen().lang + ')') : 'none found'}</b></p></div>`;
@@ -867,11 +1140,18 @@
       const v = inp.value.trim().split(/\s+/)[0] || '';
       if (!v) { out.innerHTML = ''; return; }
       const a = L.analyze(v);
-      out.innerHTML = `<div class="labw">${wordHTML(v)} ${speakBtn(v)}</div>
+      let hint = '';
+      if (!/[āēīōūȳ]/i.test(v)) {
+        const cand = uniq([...Object.values(WORDS).map(w => w.la), ...allStressWords()]).find(c => /[āēīōūȳ]/.test(c) && L.normLatin(c) === L.normLatin(v));
+        hint = cand ? `<div class="you">Did you mean <button class="chip lab" data-w="${esc(cand)}">${esc(L.clean(cand))}</button> ? Without macrons every vowel counts as short.</div>`
+          : '<div class="muted small center">No macrons → every vowel is treated as short.</div>';
+      }
+      out.innerHTML = hint + `<div class="labw">${wordHTML(v)} ${speakBtn(v)}</div>
         <div class="weights">${a.syllables.map((s, i) => `<span class="wt ${s.heavy ? 'H' : 'Lt'} ${i === a.stress ? 'st' : ''}"><b>${esc(s.text)}</b><small>${s.heavy ? 'heavy' : 'light'}</small></span>`).join('')}</div>
         <div class="tresp">say: <b>${esc(L.respell(v))}</b></div><div class="texp">${L.explain(v)}</div>`;
     };
     inp.oninput = upd; upd();
+    out.addEventListener('click', e => { const c = e.target.closest('.chip.lab'); if (c) { inp.value = c.dataset.w; upd(); } });
     $$('.mk', scr).forEach(b => b.onclick = () => { const p = inp.selectionStart ?? inp.value.length; inp.value = inp.value.slice(0, p) + b.textContent + inp.value.slice(p); inp.focus(); inp.setSelectionRange(p + 1, p + 1); upd(); });
     $$('.chip.lab', scr).forEach(b => b.onclick = () => { inp.value = b.dataset.w; upd(); });
   }
@@ -899,7 +1179,7 @@
       <div class="card"><h2 class="h2">This week</h2><div class="week">${days.map(([d, v]) => `<div class="wd"><div class="wb"><div style="height:${v / maxD * 100}%" class="${v >= save.profile.dailyGoal ? 'hit' : ''}"></div></div><small>${d.toLocaleDateString(undefined, { weekday: 'short' })}</small><small class="muted">${v}</small></div>`).join('')}</div>
         <label class="row2">Daily goal <select id="goal">${[10, 20, 30, 50, 100].map(g => `<option ${g === save.profile.dailyGoal ? 'selected' : ''} value="${g}">${g} XP${g === 10 ? ' — casual' : g === 30 ? ' — regular' : g === 50 ? ' — serious' : g === 100 ? ' — insane' : ''}</option>`).join('')}</select></label></div>
       <div class="card"><h2 class="h2">🏅 Achievements <span class="muted">${Object.keys(save.achievements).filter(k => ACH.find(a => a.id === k)).length}/${ACH.length}</span></h2>
-        <div class="achs">${ACH.map(a => `<div class="ach ${save.achievements[a.id] ? 'got' : ''}" title="${esc(a.desc)}"><span>${a.icon}</span><b>${a.name}</b><small>${a.desc}</small></div>`).join('')}</div></div>
+        <div class="achs">${ACH.map(a => `<div class="ach ${save.achievements[a.id] ? 'got' : ''}" title="${esc(a.desc)}"><span>${a.icon}</span><b>${a.name}</b><small>${a.desc}</small>${!save.achievements[a.id] && a.prog ? (([c, m]) => `<div class="aprog"><i style="width:${Math.min(100, c / m * 100)}%"></i></div><small>${Math.min(c, m)}/${m}</small>`)(a.prog()) : ''}</div>`).join('')}</div></div>
 
       <div class="card sync"><h2 class="h2">💾 Save & Sync</h2>
         <p>✅ Progress is <b>saved automatically</b> in this browser after every lesson.</p>
@@ -918,7 +1198,8 @@
           <p>Updating the app: just replace the files — progress stays in the browser. To be extra safe, download a file before updating.</p></details>
         <details><summary>Danger zone</summary>
           <label class="row2"><input type="checkbox" id="replace"> Import <b>replaces</b> instead of merging</label>
-          <button class="btn danger" id="reset">🗑️ Reset all progress</button></details>
+          <button class="btn danger" id="reset">🗑️ Reset all progress</button>
+          ${S.hasSnapshot() ? '<button class="btn" id="restore">↩️ Restore state before last reset/replace</button>' : ''}</details>
       </div>
 
       <div class="card"><h2 class="h2">⚙️ Settings</h2>
@@ -942,7 +1223,7 @@
     $('#pname').onchange = e => { save.profile.name = e.target.value.slice(0, 40); commit(); };
     $('#goal').onchange = e => { save.profile.dailyGoal = +e.target.value; commit(); };
     $('#snd').onchange = e => set('sound', e.target.checked);
-    $('#tts').onchange = e => set('tts', e.target.checked);
+    $('#tts').onchange = e => { set('tts', e.target.checked); syncVoiceClass(); };
     $('#lis').onchange = e => set('listening', e.target.checked);
     $('#voice').onchange = e => set('voiceURI', e.target.value);
     $('#rate').onchange = e => set('ttsRate', +e.target.value);
@@ -965,7 +1246,22 @@
     };
     $('#reset').onclick = async () => {
       const r = await modal('<h3>Reset ALL progress?</h3><p>This cannot be undone (unless you have a backup file). The previous state is kept as an internal backup copy.</p>', [{ label: 'Cancel', primary: true, value: 0 }, { label: 'Reset', danger: true, value: 1 }]);
-      if (r === 1) { S.wipeLocal(); save = S.defaultSave(); commit(); toast('Progress reset.'); go('learn'); }
+      if (r === 1) {
+        const epoch = save.epoch + 1;
+        S.wipeLocal(); // keeps a snapshot for "Restore"
+        save = S.defaultSave(); save.epoch = epoch;
+        DEVICE = S.rotateDeviceId(); // counters must never go backwards under the same id
+        commit(); toast('Progress reset. (You can still restore it in Danger zone.)'); go('learn');
+      }
+    };
+    if ($('#restore')) $('#restore').onclick = async () => {
+      const snap = S.readSnapshot(); if (!snap) return;
+      const r = await modal(`<h3>Restore previous state?</h3><p>That state has <b>${S.totalXP(snap)} XP</b>. Your current state (${S.totalXP(save)} XP) becomes the new restore point.</p>`, [{ label: 'Cancel', primary: true, value: 0 }, { label: 'Restore', value: 1 }]);
+      if (r !== 1) return;
+      S.snapshot();
+      snap.epoch = Math.max(snap.epoch, save.epoch) + 1;
+      save = snap; DEVICE = S.rotateDeviceId();
+      commit(); applyTheme(); toast('↩️ Restored.'); go('profile');
     };
   }
   document.addEventListener('input', e => { if (e.target.id === 'codein') window.__codein = e.target.value; });
@@ -983,9 +1279,14 @@
     let inc;
     try { inc = await S.parseImport(text); }
     catch (e) { await modal(`<h3>❌ Could not import</h3><p>${esc(e.message || e)}</p>`); return; }
+    if (S.readOnlyReason) { await modal(`<h3>Update the app first</h3><p>${esc(S.readOnlyReason)}</p>`); return; }
     const replace = $('#replace') && $('#replace').checked;
     const before = { xp: S.totalXP(save), l: Object.values(save.lessons).filter(l => l.lvl > 0).length, w: learnedIds().length };
-    save = replace ? inc : S.merge(save, inc);
+    if (replace) {
+      S.snapshot();
+      inc.epoch = Math.max(inc.epoch, save.epoch) + 1;
+      save = inc; DEVICE = S.rotateDeviceId();
+    } else save = S.merge(save, inc);
     checkAchievements(); commit();
     const after = { xp: S.totalXP(save), l: Object.values(save.lessons).filter(l => l.lvl > 0).length, w: learnedIds().length };
     await modal(`<h3>✅ Progress ${replace ? 'replaced' : 'merged'}</h3>
@@ -1002,18 +1303,26 @@
   // another tab saved → merge it in so tabs never overwrite each other
   window.addEventListener('storage', e => {
     if (e.key !== S.STORAGE_KEY || !e.newValue) return;
-    try { save = S.merge(save, S.migrate(JSON.parse(e.newValue))); renderTop(); } catch (err) { /* ignore */ }
+    try {
+      const inc = S.migrate(JSON.parse(e.newValue));
+      if (inc.epoch > save.epoch) { save = inc; DEVICE = S.getDeviceId(); if (!Run.active) go(current); }
+      else if (inc.epoch === save.epoch) save = S.merge(save, inc);
+      renderTop();
+    } catch (err) { /* ignore */ }
   });
 
   Voice.init();
+  syncVoiceClass();
   applyTheme();
   renderTop();
   go('learn');
   if (boot.status === 'restored-backup') toast('⚠️ Main save was damaged — restored from the automatic backup.', 6000);
+  if (boot.status === 'corrupt') DEVICE = S.rotateDeviceId();
+  if (!S.storageWritable()) showSaveFailed();
   if (boot.status === 'corrupt') modal(`<h3>⚠️ Save could not be read</h3><p>${esc(boot.error)}</p><p>Starting fresh. If you have a progress file, load it in Profile → Save & Sync.</p>`);
   if (boot.status === 'new') setTimeout(() => modal(`<div class="center"><div class="trophy">🦉</div><h2>Salvē!</h2><p>Welcome to <b>Latinum</b> — learn Latin the way Cicero spoke it.</p><p class="muted">Start with <b>Prōnūntiātiō</b>: four short lessons on sounds and the stress rule. Everything else builds on them.</p></div>`, [{ label: 'Incipiāmus! (Let\'s begin)', primary: true }]), 300);
   checkAchievements();
 
   // exposed for debugging / tests in the browser console
-  window.__latinum = { get save() { return save; }, buildLesson, startLesson };
+  window.__latinum = { get save() { return save; }, buildLesson, startLesson, runCustom: items => startLesson(null, 'custom', items) };
 })();

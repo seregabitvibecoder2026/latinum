@@ -127,8 +127,10 @@
    */
   function analyze(rawWord) {
     if (_cache.has(rawWord)) return _cache.get(rawWord);
-    const raw = String(rawWord).replace(/[^A-Za-zāēīōūȳĀĒĪŌŪȲ+|]/g, '');
-    const enclitic = raw.includes('+');
+    let raw = String(rawWord).replace(/[^A-Za-zāēīōūȳĀĒĪŌŪȲ+|]/g, '');
+    // only a real enclitic (-que / -ne / -ve after a real word) counts; stray "+" is ignored
+    const enclitic = /[a-zāēīōūȳ]{2,}\+(que|ne|ve)$/i.test(raw);
+    if (!enclitic) raw = raw.replace(/\+/g, '');
     const manual = raw.includes('|');
     let syllables;
     if (manual) {
@@ -137,6 +139,8 @@
     } else {
       syllables = syllabifyUnits(segment(raw.replace(/\+/g, ''))).map(describe);
     }
+    syllables = syllables.filter(x => x.text);
+    if (!syllables.length) syllables = [describe({ units: [], mclNext: false })];
     const n = syllables.length;
     let stress;
     if (n <= 2) stress = 0;
@@ -153,6 +157,7 @@
     const a = analyze(rawWord);
     const S = a.syllables, n = a.n;
     const st = S[a.stress] ? S[a.stress].text : '';
+    if (!a.display) return '';
     if (n === 1) return `One syllable — it carries the stress by itself.`;
     if (a.enclitic) return `"-${S[n - 1].text}" is an enclitic tacked onto the word: the stress jumps to the syllable right before it — <b>${st}</b>.`;
     if (n === 2) return `Two syllables → the stress is <b>always on the first</b> one: <b>${st}</b>.`;
@@ -176,7 +181,9 @@
   function respell(rawWord) {
     const a = analyze(rawWord);
     return a.syllables.map((s, i) => {
-      const t = s.units.map(u => u.t === 'V' ? EN_V[u.k.toLowerCase()] || u.k : (EN_C[u.k] !== undefined ? EN_C[u.k] : u.k)).join('');
+      const prev = a.syllables[i - 1];
+      const jjOn = prev && prev.units.length && prev.units[prev.units.length - 1].k === 'jj' ? 'y' : '';
+      const t = jjOn + s.units.map(u => u.t === 'V' ? EN_V[u.k.toLowerCase()] || u.k : (EN_C[u.k] !== undefined ? EN_C[u.k] : u.k)).join('');
       return i === a.stress && a.n > 1 ? t.toUpperCase() : t;
     }).join('-');
   }
@@ -187,15 +194,17 @@
   // voices obey. It is an approximation; long vowels are not rendered.
   const ACC_ES = { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú', y: 'í' };
   const ACC_IT = { a: 'à', e: 'é', i: 'ì', o: 'ó', u: 'ù', y: 'ì' };
-  function ttsWord(rawWord, lang) {
-    const a = analyze(rawWord);
+  function ttsWord(rawWord, lang, forceStress) {
+    const a0 = analyze(rawWord);
+    const a = forceStress === undefined ? a0 : Object.assign({}, a0, { stress: forceStress });
     const flat = []; // [{u, syl}]
     a.syllables.forEach((s, si) => s.units.forEach(u => flat.push({ u, si })));
     let out = '';
     flat.forEach((f, idx) => {
       const u = f.u, next = flat[idx + 1] && flat[idx + 1].u;
       const nk = next ? (next.t === 'V' ? stripMacrons(next.k.toLowerCase()) : '') : '';
-      const front = FRONT.includes(nk) || nk === 'ae' || nk === 'oe';
+      // ae/oe are rewritten to ai/oi below, so they are BACK vowels for c/g spelling
+      const front = ['e', 'i', 'y'].includes(nk);
       if (u.t === 'V') {
         let base = stripMacrons(u.k.toLowerCase());
         if (base === 'ae') base = 'ai';
@@ -209,12 +218,13 @@
       }
       const k = u.k;
       if (k === 'c' || k === 'k' || k === 'ch') out += front ? (lang === 'it' ? 'ch' : 'qu') : 'c';
-      else if (k === 'g') out += front ? (lang === 'it' ? 'gh' : 'gu') : 'g';
       else if (k === 'qu') out += lang === 'it' ? 'qu' : (front ? 'cu' : 'cu');
       else if (k === 'gu') out += lang === 'it' ? 'gu' : (front ? 'gü' : 'gu');
       else if (k === 'v') out += 'u';
       else if (k === 'j' || k === 'jj') out += lang === 'it' ? 'i' : 'y';
-      else if (k === 'ph') out += 'f';
+      else if (k === 'ph') out += 'p'; // classical ph = aspirated p, not f
+      else if (k === 'g' && next && next.k === 'n' && lang === 'it') out += 'n'; // gn = [ŋn], not Italian [ɲ]
+      else if (k === 'g') out += front ? (lang === 'it' ? 'gh' : 'gu') : 'g';
       else if (k === 'th') out += 't';
       else if (k === 'rh') out += 'r';
       else if (k === 'l' && lang === 'es' && next && next.k === 'l') out += ''; // avoid Spanish "ll"

@@ -18,55 +18,55 @@
 (function (root) {
   'use strict';
 
-  // id: { la, en, img, info?, alt? }
+  // id: { la, en, img, info?, alt?, nopic? (abstract: no picture quiz), proper? (name: no translation quiz), grp? (look-alike pictures) }
   const WORDS = {
     // --- sounds ---
     aqua: { la: 'aqua', en: 'water', img: '💧', info: 'aqua, aquae (f.)' },
     rosa: { la: 'rosa', en: 'rose', img: '🌹', info: 'rosa, rosae (f.)' },
     vinum: { la: 'vīnum', en: 'wine', img: '🍷', info: 'vīnum, vīnī (n.) — v = English w!' },
     caelum: { la: 'caelum', en: 'sky', img: '🌌', info: 'caelum, caelī (n.) — c = k, ae = "eye"', alt: ['heaven'] },
-    caesar: { la: 'Caesar', en: 'Caesar', img: '🦅', info: 'Gāius Iūlius Caesar — said KAI-sar' },
-    roma: { la: 'Rōma', en: 'Rome', img: '🏟️', info: 'Rōma, Rōmae (f.)' },
+    caesar: { proper: true, la: 'Caesar', en: 'Caesar', img: '🦅', info: 'Gāius Iūlius Caesar — said KAI-sar' },
+    roma: { proper: true, la: 'Rōma', en: 'Rome', img: '🐺', info: 'Rōma, Rōmae (f.)' },
     malum_apple: { la: 'mālum', en: 'apple', img: '🍎', info: 'mālum, mālī (n.) — long ā!' },
-    malum_evil: { la: 'malum', en: 'evil', img: '😈', info: 'malum, malī (n.) — short a', alt: ['bad thing'] },
+    malum_evil: { nopic: true, la: 'malum', en: 'evil', img: '😈', info: 'malum, malī (n.) — short a', alt: ['bad thing'] },
     liber_book: { la: 'liber', en: 'book', img: '📖', info: 'liber, librī (m.) — short i' },
-    liber_free: { la: 'līber', en: 'free', img: '🔓', info: 'līber, lībera, līberum — long ī' },
+    liber_free: { nopic: true, la: 'līber', en: 'free', img: '🔓', info: 'līber, lībera, līberum — long ī' },
     os_mouth: { la: 'ōs', en: 'mouth', img: '👄', info: 'ōs, ōris (n.) — long ō' },
     os_bone: { la: 'os', en: 'bone', img: '🦴', info: 'os, ossis (n.) — short o' },
-    amicus: { la: 'amīcus', en: 'friend', img: '🤝', info: 'amīcus, amīcī (m.)' },
+    amicus: { grp: 'people', la: 'amīcus', en: 'friend', img: '🤝', info: 'amīcus, amīcī (m.)' },
     fenestra: { la: 'fenestra', en: 'window', img: '🪟', info: 'fenestra, fenestrae (f.)' },
-    romanus: { la: 'Rōmānus', en: 'Roman', img: '🛡️', info: 'Rōmānus, -a, -um', alt: ['a roman'] },
-    puella: { la: 'puella', en: 'girl', img: '👧', info: 'puella, puellae (f.)' },
-    magister: { la: 'magister', en: 'teacher', img: '🧑‍🏫', info: 'magister, magistrī (m.)', alt: ['master'] },
-    femina: { la: 'fēmina', en: 'woman', img: '👩', info: 'fēmina, fēminae (f.)' },
-    dominus: { la: 'dominus', en: 'master', img: '🧔', info: 'dominus, dominī (m.)', alt: ['lord'] },
-    filius: { la: 'fīlius', en: 'son', img: '🧒', info: 'fīlius, fīliī (m.)' },
-    cicero: { la: 'Cicerō', en: 'Cicero', img: '📜', info: 'Mārcus Tullius Cicerō — KI-ke-roh, never "SIS-er-oh"' },
+    romanus: { proper: true, la: 'Rōmānus', en: 'Roman', img: '🛡️', info: 'Rōmānus, -a, -um', alt: ['a roman'] },
+    puella: { grp: 'people', la: 'puella', en: 'girl', img: '👧', info: 'puella, puellae (f.)' },
+    magister: { grp: 'people', la: 'magister', en: 'teacher', img: '🧑‍🏫', info: 'magister, magistrī (m.)', alt: ['master'] },
+    femina: { grp: 'people', la: 'fēmina', en: 'woman', img: '👩', info: 'fēmina, fēminae (f.)' },
+    dominus: { grp: 'people', la: 'dominus', en: 'master', img: '🧔', info: 'dominus, dominī (m.)', alt: ['lord'] },
+    filius: { grp: 'people', la: 'fīlius', en: 'son', img: '🧒', info: 'fīlius, fīliī (m.)' },
+    cicero: { proper: true, la: 'Cicerō', en: 'Cicero', img: '📜', info: 'Mārcus Tullius Cicerō — KI-ke-roh, never "SIS-er-oh"' },
     tenebrae: { la: 'tenebrae', en: 'darkness', img: '🌑', info: 'tenebrae, tenebrārum (f. pl.)' },
-    italia: { la: 'Italia', en: 'Italy', img: '🥾', info: 'Italia, Italiae (f.)' },
+    italia: { proper: true, la: 'Ītalia', en: 'Italy', img: '🥾', info: 'Italia, Italiae (f.)' },
     // --- basics ---
-    salve: { la: 'salvē', en: 'hello', img: '👋', info: 'salvē! (to one person)', alt: ['hi'] },
-    vale: { la: 'valē', en: 'goodbye', img: '🚪', info: 'valē! (to one person)', alt: ['bye', 'farewell'] },
-    puer: { la: 'puer', en: 'boy', img: '👦', info: 'puer, puerī (m.)' },
-    vir: { la: 'vir', en: 'man', img: '👨', info: 'vir, virī (m.)' },
-    sum: { la: 'sum', en: 'I am', img: '🙋', info: 'sum, es, est — to be' },
-    es: { la: 'es', en: 'you are', img: '🫵', info: 'sum, es, est — to be' },
-    est: { la: 'est', en: 'is', img: '👉', info: 'sum, es, est — to be', alt: ['he is', 'she is', 'it is'] },
-    et: { la: 'et', en: 'and', img: '➕' },
-    non: { la: 'nōn', en: 'not', img: '🚫' },
-    ita: { la: 'ita', en: 'yes', img: '✅', info: 'literally "so, thus"', alt: ['so', 'thus'] },
-    minime: { la: 'minimē', en: 'no', img: '❌', info: 'literally "least of all"', alt: ['not at all'] },
-    quoque: { la: 'quoque', en: 'also', img: '🔁', alt: ['too'] },
-    sed: { la: 'sed', en: 'but', img: '⚖️' },
+    salve: { nopic: true, la: 'salvē', en: 'hello', img: '👋', info: 'salvē! (to one person)', alt: ['hi'] },
+    vale: { nopic: true, la: 'valē', en: 'goodbye', img: '🚪', info: 'valē! (to one person)', alt: ['bye', 'farewell'] },
+    puer: { grp: 'people', la: 'puer', en: 'boy', img: '👦', info: 'puer, puerī (m.)' },
+    vir: { grp: 'people', la: 'vir', en: 'man', img: '👨', info: 'vir, virī (m.)' },
+    sum: { nopic: true, la: 'sum', en: 'I am', img: '🙋', info: 'sum, es, est — to be' },
+    es: { nopic: true, la: 'es', en: 'you are', img: '🫵', info: 'sum, es, est — to be' },
+    est: { nopic: true, la: 'est', en: 'is', img: '👉', info: 'sum, es, est — to be', alt: ['he is', 'she is', 'it is'] },
+    et: { nopic: true, la: 'et', en: 'and', img: '➕' },
+    non: { nopic: true, la: 'nōn', en: 'not', img: '🚫' },
+    ita: { nopic: true, la: 'ita', en: 'yes', img: '✅', info: 'literally "so, thus"', alt: ['so', 'thus'] },
+    minime: { nopic: true, la: 'minimē', en: 'no', img: '❌', info: 'literally "least of all"', alt: ['not at all'] },
+    quoque: { nopic: true, la: 'quoque', en: 'also', img: '🔁', alt: ['too'] },
+    sed: { nopic: true, la: 'sed', en: 'but', img: '⚖️' },
     // --- family ---
-    pater: { la: 'pater', en: 'father', img: '👨‍🍼', info: 'pater, patris (m.)' },
-    mater: { la: 'māter', en: 'mother', img: '🤱', info: 'māter, mātris (f.)' },
-    filia: { la: 'fīlia', en: 'daughter', img: '👱‍♀️', info: 'fīlia, fīliae (f.)' },
-    familia: { la: 'familia', en: 'family', img: '👨‍👩‍👧‍👦', info: 'familia, familiae (f.) — fa-MI-li-a' },
-    frater: { la: 'frāter', en: 'brother', img: '👬', info: 'frāter, frātris (m.)' },
-    soror: { la: 'soror', en: 'sister', img: '👭', info: 'soror, sorōris (f.)' },
-    avus: { la: 'avus', en: 'grandfather', img: '👴', info: 'avus, avī (m.)' },
-    avia: { la: 'avia', en: 'grandmother', img: '👵', info: 'avia, aviae (f.)' },
+    pater: { grp: 'people', la: 'pater', en: 'father', img: '👨‍🍼', info: 'pater, patris (m.)' },
+    mater: { grp: 'people', la: 'māter', en: 'mother', img: '🤱', info: 'māter, mātris (f.)' },
+    filia: { grp: 'people', la: 'fīlia', en: 'daughter', img: '👱‍♀️', info: 'fīlia, fīliae (f.)' },
+    familia: { nopic: true, la: 'familia', en: 'family', img: '👨‍👩‍👧‍👦', info: 'familia, familiae (f.) — fa-MI-li-a' },
+    frater: { grp: 'people', la: 'frāter', en: 'brother', img: '👬', info: 'frāter, frātris (m.)' },
+    soror: { grp: 'people', la: 'soror', en: 'sister', img: '👭', info: 'soror, sorōris (f.)' },
+    avus: { grp: 'people', la: 'avus', en: 'grandfather', img: '👴', info: 'avus, avī (m.)' },
+    avia: { grp: 'people', la: 'avia', en: 'grandmother', img: '👵', info: 'avia, aviae (f.)' },
     // --- animals ---
     canis: { la: 'canis', en: 'dog', img: '🐕', info: 'canis, canis (m./f.)' },
     feles: { la: 'fēlēs', en: 'cat', img: '🐈', info: 'fēlēs, fēlis (f.)' },
@@ -78,7 +78,7 @@
     ursus: { la: 'ursus', en: 'bear', img: '🐻', info: 'ursus, ursī (m.)' },
     leo: { la: 'leō', en: 'lion', img: '🦁', info: 'leō, leōnis (m.)' },
     taurus: { la: 'taurus', en: 'bull', img: '🐂', info: 'taurus, taurī (m.)' },
-    homo: { la: 'homō', en: 'human', img: '🧑', info: 'homō, hominis (m.)', alt: ['person', 'man', 'human being'] },
+    homo: { grp: 'people', la: 'homō', en: 'human', img: '🧑', info: 'homō, hominis (m.)', alt: ['person', 'man', 'human being'] },
     // --- verbs ---
     amo: { la: 'amō', en: 'I love', img: '😍', info: 'amō, amāre — amō, amās, amat' },
     ambulo: { la: 'ambulō', en: 'I walk', img: '🚶', info: 'ambulō, ambulāre' },
@@ -89,8 +89,9 @@
     specto: { la: 'spectō', en: 'I watch', img: '👀', info: 'spectō, spectāre', alt: ['I look at'] },
     habito: { la: 'habitō', en: 'I live', img: '🏡', info: 'habitō, habitāre — to dwell', alt: ['I dwell'] },
     voco: { la: 'vocō', en: 'I call', img: '📣', info: 'vocō, vocāre' },
+    nauta: { grp: 'people', la: 'nauta', en: 'sailor', img: '🧑‍✈️', info: 'nauta, nautae (m.) — a masculine word in -a!' },
     pugno: { la: 'pugnō', en: 'I fight', img: '🥊', info: 'pugnō, pugnāre' },
-    odi: { la: 'ōdī', en: 'I hate', img: '😠', info: 'ōdī, ōdisse (perfect form, present meaning)' },
+    odi: { nopic: true, la: 'ōdī', en: 'I hate', img: '😠', info: 'ōdī, ōdisse (perfect form, present meaning)' },
     // --- food ---
     cibus: { la: 'cibus', en: 'food', img: '🍲', info: 'cibus, cibī (m.)' },
     panis: { la: 'pānis', en: 'bread', img: '🍞', info: 'pānis, pānis (m.) — acc. pānem' },
@@ -99,31 +100,31 @@
     mel: { la: 'mel', en: 'honey', img: '🍯', info: 'mel, mellis (n.)' },
     ovum: { la: 'ōvum', en: 'egg', img: '🥚', info: 'ōvum, ōvī (n.)' },
     uva: { la: 'ūva', en: 'grape', img: '🍇', info: 'ūva, ūvae (f.)' },
-    habeo: { la: 'habeō', en: 'I have', img: '🤲', info: 'habeō, habēre — habeō, habēs, habet' },
+    habeo: { nopic: true, la: 'habeō', en: 'I have', img: '🤲', info: 'habeō, habēre — habeō, habēs, habet' },
     // --- nature ---
     sol: { la: 'sōl', en: 'sun', img: '☀️', info: 'sōl, sōlis (m.)' },
     luna: { la: 'lūna', en: 'moon', img: '🌙', info: 'lūna, lūnae (f.)' },
     stella: { la: 'stella', en: 'star', img: '⭐', info: 'stella, stellae (f.)' },
     terra: { la: 'terra', en: 'earth', img: '🌍', info: 'terra, terrae (f.)', alt: ['land'] },
     mare: { la: 'mare', en: 'sea', img: '🌊', info: 'mare, maris (n.) — abl. marī' },
-    in: { la: 'in', en: 'in', img: '📍', info: 'in + ablative = in / on', alt: ['on'] },
+    in: { nopic: true, la: 'in', en: 'in', img: '📍', info: 'in + ablative = in / on', alt: ['on'] },
     silva: { la: 'silva', en: 'forest', img: '🌲', info: 'silva, silvae (f.)', alt: ['wood', 'woods'] },
     flumen: { la: 'flūmen', en: 'river', img: '🏞️', info: 'flūmen, flūminis (n.)' },
     mons: { la: 'mōns', en: 'mountain', img: '⛰️', info: 'mōns, montis (m.)' },
     arbor: { la: 'arbor', en: 'tree', img: '🌳', info: 'arbor, arboris (f.)' },
     flos: { la: 'flōs', en: 'flower', img: '🌸', info: 'flōs, flōris (m.)' },
     // --- adjectives ---
-    magnus: { la: 'magnus', en: 'big', img: '🐘', info: 'magnus, magna, magnum', alt: ['great', 'large'] },
-    parvus: { la: 'parvus', en: 'small', img: '🐜', info: 'parvus, parva, parvum', alt: ['little'] },
-    bonus: { la: 'bonus', en: 'good', img: '👍', info: 'bonus, bona, bonum' },
-    malus: { la: 'malus', en: 'bad', img: '👎', info: 'malus, mala, malum', alt: ['evil'] },
-    novus: { la: 'novus', en: 'new', img: '✨', info: 'novus, nova, novum' },
-    laetus: { la: 'laetus', en: 'happy', img: '😊', info: 'laetus, laeta, laetum', alt: ['glad', 'joyful'] },
-    tristis: { la: 'trīstis', en: 'sad', img: '😢', info: 'trīstis, trīste' },
+    magnus: { nopic: true, la: 'magnus', en: 'big', img: '🐘', info: 'magnus, magna, magnum', alt: ['great', 'large'] },
+    parvus: { nopic: true, la: 'parvus', en: 'small', img: '🐜', info: 'parvus, parva, parvum', alt: ['little'] },
+    bonus: { nopic: true, la: 'bonus', en: 'good', img: '👍', info: 'bonus, bona, bonum' },
+    malus: { nopic: true, la: 'malus', en: 'bad', img: '👎', info: 'malus, mala, malum', alt: ['evil'] },
+    novus: { nopic: true, la: 'novus', en: 'new', img: '✨', info: 'novus, nova, novum' },
+    laetus: { nopic: true, la: 'laetus', en: 'happy', img: '😊', info: 'laetus, laeta, laetum', alt: ['glad', 'joyful'] },
+    tristis: { nopic: true, la: 'trīstis', en: 'sad', img: '😢', info: 'trīstis, trīste' },
     albus: { la: 'albus', en: 'white', img: '⚪', info: 'albus, alba, album' },
     niger: { la: 'niger', en: 'black', img: '⚫', info: 'niger, nigra, nigrum' },
     ruber: { la: 'ruber', en: 'red', img: '🔴', info: 'ruber, rubra, rubrum' },
-    longus: { la: 'longus', en: 'long', img: '📏', info: 'longus, longa, longum' },
+    longus: { nopic: true, la: 'longus', en: 'long', img: '📏', info: 'longus, longa, longum' },
     // --- numbers ---
     unus: { la: 'ūnus', en: 'one', img: '1️⃣' },
     duo: { la: 'duo', en: 'two', img: '2️⃣' },
@@ -136,7 +137,7 @@
     novem: { la: 'novem', en: 'nine', img: '9️⃣' },
     decem: { la: 'decem', en: 'ten', img: '🔟' },
     // --- body ---
-    caput: { la: 'caput', en: 'head', img: '🗿', info: 'caput, capitis (n.)' },
+    caput: { nopic: true, la: 'caput', en: 'head', img: '🗿', info: 'caput, capitis (n.)' },
     oculus: { la: 'oculus', en: 'eye', img: '👁️', info: 'oculus, oculī (m.)' },
     nasus: { la: 'nāsus', en: 'nose', img: '👃', info: 'nāsus, nāsī (m.)' },
     auris: { la: 'auris', en: 'ear', img: '👂', info: 'auris, auris (f.)' },
@@ -146,31 +147,31 @@
     cor: { la: 'cor', en: 'heart', img: '❤️', info: 'cor, cordis (n.)' },
     bracchium: { la: 'bracchium', en: 'arm', img: '💪', info: 'bracchium, bracchiī (n.)' },
     corpus: { la: 'corpus', en: 'body', img: '🧍', info: 'corpus, corporis (n.)' },
-    mens: { la: 'mēns', en: 'mind', img: '🧠', info: 'mēns, mentis (f.)' },
+    mens: { nopic: true, la: 'mēns', en: 'mind', img: '🧠', info: 'mēns, mentis (f.)' },
     // --- city ---
     urbs: { la: 'urbs', en: 'city', img: '🏙️', info: 'urbs, urbis (f.) — abl. urbe' },
     via: { la: 'via', en: 'road', img: '🛣️', info: 'via, viae (f.)', alt: ['way', 'street'] },
     domus: { la: 'domus', en: 'house', img: '🏠', info: 'domus, domūs (f.)', alt: ['home'] },
     templum: { la: 'templum', en: 'temple', img: '🛕', info: 'templum, templī (n.)' },
-    forum: { la: 'forum', en: 'forum', img: '🏛️', info: 'forum, forī (n.) — market square', alt: ['marketplace'] },
-    rex: { la: 'rēx', en: 'king', img: '👑', info: 'rēx, rēgis (m.)' },
-    regina: { la: 'rēgīna', en: 'queen', img: '👸', info: 'rēgīna, rēgīnae (f.)' },
-    miles: { la: 'mīles', en: 'soldier', img: '🪖', info: 'mīles, mīlitis (m.)' },
+    forum: { proper: true, la: 'forum', en: 'forum', img: '🏛️', info: 'forum, forī (n.) — market square', alt: ['marketplace'] },
+    rex: { grp: 'people', la: 'rēx', en: 'king', img: '👑', info: 'rēx, rēgis (m.)' },
+    regina: { grp: 'people', la: 'rēgīna', en: 'queen', img: '👸', info: 'rēgīna, rēgīnae (f.)' },
+    miles: { grp: 'people', la: 'mīles', en: 'soldier', img: '🪖', info: 'mīles, mīlitis (m.)' },
     gladius: { la: 'gladius', en: 'sword', img: '🗡️', info: 'gladius, gladiī (m.)' },
     bellum: { la: 'bellum', en: 'war', img: '🔥', info: 'bellum, bellī (n.)' },
     pax: { la: 'pāx', en: 'peace', img: '🕊️', info: 'pāx, pācis (f.)' },
     // --- classical vocabulary ---
-    dies: { la: 'diēs', en: 'day', img: '📅', info: 'diēs, diēī (m.) — acc. diem' },
-    tempus: { la: 'tempus', en: 'time', img: '⏳', info: 'tempus, temporis (n.)' },
-    lente: { la: 'lentē', en: 'slowly', img: '🐢' },
-    spero: { la: 'spērō', en: 'I hope', img: '🙏', info: 'spērō, spērāre' },
-    amor: { la: 'amor', en: 'love', img: '💘', info: 'amor, amōris (m.)' },
-    fortuna: { la: 'fortūna', en: 'fortune', img: '🎡', info: 'fortūna, fortūnae (f.)', alt: ['luck'] },
+    dies: { nopic: true, la: 'diēs', en: 'day', img: '📅', info: 'diēs, diēī (m.) — acc. diem' },
+    tempus: { nopic: true, la: 'tempus', en: 'time', img: '⏳', info: 'tempus, temporis (n.)' },
+    lente: { nopic: true, la: 'lentē', en: 'slowly', img: '🐢' },
+    spero: { nopic: true, la: 'spērō', en: 'I hope', img: '🙏', info: 'spērō, spērāre' },
+    amor: { nopic: true, la: 'amor', en: 'love', img: '💘', info: 'amor, amōris (m.)' },
+    fortuna: { nopic: true, la: 'fortūna', en: 'fortune', img: '🎡', info: 'fortūna, fortūnae (f.)', alt: ['luck'] },
     astrum: { la: 'astrum', en: 'star', img: '🌠', info: 'astrum, astrī (n.) — pl. astra' },
-    humanus: { la: 'hūmānus', en: 'human', img: '🫂', info: 'hūmānus, -a, -um', alt: ['humane'] },
+    humanus: { nopic: true, la: 'hūmānus', en: 'human', img: '🫂', info: 'hūmānus, -a, -um', alt: ['humane'] },
     arma: { la: 'arma', en: 'weapons', img: '⚔️', info: 'arma, armōrum (n. pl.)', alt: ['arms'] },
-    patria: { la: 'patria', en: 'homeland', img: '🏳️', info: 'patria, patriae (f.)', alt: ['fatherland', 'country'] },
-    dulcis: { la: 'dulcis', en: 'sweet', img: '🍬', info: 'dulcis, dulce' },
+    patria: { nopic: true, la: 'patria', en: 'homeland', img: '🏳️', info: 'patria, patriae (f.)', alt: ['fatherland', 'country'] },
+    dulcis: { nopic: true, la: 'dulcis', en: 'sweet', img: '🍬', info: 'dulcis, dulce' },
     gutta: { la: 'gutta', en: 'drop', img: '💦', info: 'gutta, guttae (f.)' },
     lapis: { la: 'lapis', en: 'stone', img: '🪨', info: 'lapis, lapidis (m.)' }
   };
@@ -201,7 +202,7 @@
     'omnia': 'all things', 'vincit': 'conquers', 'amor': 'love', 'ō': 'oh', 'tempora': 'times', 'mōrēs': 'customs, morals',
     'quis': 'who?', 'custōdiet': 'will guard', 'ipsōs': 'themselves', 'custōdēs': 'guards',
     'arma': 'weapons, arms', 'virumque': 'and the man', 'canō': 'I sing (of)', 'gallia': 'Gaul', 'omnis': 'whole, all',
-    'dīvīsa': 'divided', 'partēs': 'parts', 'trēs': 'three', 'ōdī': 'I hate', 'amō': 'I love',
+    'dīvīsa': 'divided', 'partēs': 'parts', 'trēs': 'three', 'duae': 'two (f.)', 'in': 'in, on (+abl.); into (+acc.)', 'ōdī': 'I hate', 'amō': 'I love',
     'dulce': 'sweet', 'decōrum': 'fitting, honourable', 'prō': 'for', 'patriā': 'homeland', 'morī': 'to die',
     'senātus': 'the senate', 'populusque': 'and the people', 'rōmānus': 'Roman',
     'gutta': 'a drop', 'cavat': 'hollows', 'lapidem': 'stone (object)',
@@ -224,7 +225,7 @@
 <li><b>G is always hard</b> (as in "go"): <i>magister</i> = ma-GIS-ter.</li>
 <li><b>V sounds like English W</b>: <i>vīnum</i> = WEE-num. (Caesar said "WAY-nee, WEE-dee, WEE-kee"!)</li>
 <li><b>AE = "eye", AU = "ow", OE = "oy"</b>: <i>Caesar</i> = KAI-sar.</li></ul>
-<p>Every letter is pronounced — there are no silent letters. Doubled consonants are held longer: <i>puel-la</i>.</p>`
+<p>Letters are pronounced as written — no silent "e" as in English. Doubled consonants are held longer: <i>puel-la</i>. (Fine print: <b>h</b> was weak, a final <b>-m</b> mostly just nasalised the vowel, and a vowel before <b>ns/nf</b> is always long and nasal: <i>mēns</i>.)</p>`
         },
         {
           id: 'l_sounds_2', title: 'Long vowels', icon: '➖', focus: 'macron',
@@ -237,7 +238,7 @@
 <table class="tbl"><tr><td>a</td><td>like <i>u</i> in "cup"</td><td>ā</td><td>like "father"</td></tr>
 <tr><td>e</td><td>"pet"</td><td>ē</td><td>"they" (pure)</td></tr>
 <tr><td>i</td><td>"pit"</td><td>ī</td><td>"machine"</td></tr>
-<tr><td>o</td><td>"pot"</td><td>ō</td><td>"no" (pure)</td></tr>
+<tr><td>o</td><td>British "pot"</td><td>ō</td><td>"no" (pure)</td></tr>
 <tr><td>u</td><td>"put"</td><td>ū</td><td>"rule"</td></tr></table>`
         },
         {
@@ -258,7 +259,7 @@
           tip: `<h3>The stress rule, part 2</h3>
 <p>If the penult is <b>light</b> (short vowel and open), the stress moves one syllable further back — to the <b>antepenult</b>:</p>
 <p><i><b>FĒ</b>-mi-na</i>, <i><b>DO</b>-mi-nus</i>, <i><b>FĪ</b>-li-us</i>, <i>I-<b>TA</b>-li-a</i>.</p>
-<p><b>Trap:</b> a stop (b c d g p t) + <b>l</b> or <b>r</b> stays together and does <i>not</i> make the syllable heavy: <i><b>TE</b>-ne-brae</i> (not te-NEB-rae).</p>
+<p><b>Trap:</b> a stop (b c d g p t, and f) + <b>l</b> or <b>r</b> stays together and does <i>not</i> make the syllable heavy: <i><b>TE</b>-ne-brae</i> (not te-NEB-rae).</p>
 <p><b>That's the whole rule.</b> It never goes further back than three syllables.</p>`
         }
       ]
@@ -288,7 +289,7 @@
             { la: 'Ita, fēmina sum.', en: 'Yes, I am a woman.' },
             { la: 'Minimē, puer nōn sum.', en: 'No, I am not a boy.' },
             { la: 'Fēmina sum, nōn puella.', en: 'I am a woman, not a girl.' },
-            { la: 'Puella quoque est.', en: 'There is also a girl.', alt: ['She is also a girl.', 'It is also a girl.'] }
+            { la: 'Puella quoque est.', en: 'There is also a girl.', alt: ['She is also a girl.', 'It is also a girl.', 'There is a girl too.', 'She is a girl too.', 'It is a girl too.'] }
           ],
           tip: `<h3>Saying yes and no</h3><p>Latin has no single word for "yes": Romans said <i>ita</i> ("so"), <i>ita est</i>, or repeated the verb. "No" is often <i>minimē</i> ("least of all").</p><p><i>nōn</i> goes right before the word it negates.</p>`
         }
@@ -342,7 +343,7 @@
             { la: 'Ursus est, sed nōn leō.', en: 'It is a bear, but not a lion.' },
             { la: 'Lupus est homō hominī.', en: 'Man is a wolf to man.', alt: ['A human is a wolf to a human.'], src: 'Plautus, Asinaria 495' }
           ],
-          tip: `<h3>📜 Your first classical quote</h3><p><i>Lupus est homō hominī</i> — "man is a wolf to man". Plautus wrote it around 200 BC; philosophers have quoted it ever since.</p><p><i><b>HO</b>-mō</i>, but <i><b>HO</b>-mi-nī</i>: "mi" is light, so the stress goes back.</p>`
+          tip: `<h3>📜 Your first classical quote</h3><p><i>Lupus est homō hominī</i> — "man is a wolf to man". Plautus wrote it around 200 BC; philosophers have quoted it ever since.</p><p>Plautus's full line: <i>lupus est homō hominī, nōn homō</i> — later shortened to the famous <i>homō hominī lupus</i>. <i>hominī</i> = "to a human" (dative).</p><p><i><b>HO</b>-mō</i>, but <i><b>HO</b>-mi-nī</i>: "mi" is light, so the stress goes back.</p>`
         }
       ]
     },
@@ -365,7 +366,7 @@
         },
         {
           id: 'l_verbs_2', title: 'Sailing & fighting', icon: '⛵',
-          words: ['navigo', 'specto', 'habito', 'voco', 'pugno', 'odi'],
+          words: ['navigo', 'specto', 'habito', 'voco', 'pugno', 'odi', 'nauta'],
           sentences: [
             { la: 'Nauta nāvigat.', en: 'The sailor sails.', alt: ['A sailor sails.', 'The sailor is sailing.'] },
             { la: 'Leō pugnat.', en: 'The lion fights.', alt: ['The lion is fighting.'] },
@@ -413,7 +414,7 @@
           id: 'l_nature_1', title: 'Sky & sea', icon: '🌙',
           words: ['sol', 'luna', 'stella', 'terra', 'mare', 'in'],
           sentences: [
-            { la: 'Stella in caelō est.', en: 'The star is in the sky.', alt: ['A star is in the sky.'] },
+            { la: 'Stella in caelō est.', en: 'The star is in the sky.', alt: ['A star is in the sky.', 'There is a star in the sky.'] },
             { la: 'Piscis in marī natat.', en: 'The fish swims in the sea.', alt: ['A fish swims in the sea.'] },
             { la: 'Sōl et lūna.', en: 'The sun and the moon.', alt: ['Sun and moon.'] },
             { la: 'Puella lūnam spectat.', en: 'The girl watches the moon.', alt: ['The girl looks at the moon.'] }
@@ -427,7 +428,7 @@
             { la: 'Lupus in silvā habitat.', en: 'The wolf lives in the forest.', alt: ['A wolf lives in the forest.'] },
             { la: 'Puer flōrem spectat.', en: 'The boy watches the flower.', alt: ['The boy looks at the flower.'] },
             { la: 'Equus in flūmine natat.', en: 'The horse swims in the river.' },
-            { la: 'Per aspera ad astra.', en: 'Through hardships to the stars.', alt: ['Through difficulties to the stars.'], src: 'Latin proverb, after Seneca' }
+            { la: 'Per aspera ad astra.', en: 'Through hardships to the stars.', alt: ['Through difficulties to the stars.'], src: 'Modern motto; cf. Seneca, Hercules Furens 437 "non est ad astra mollis e terris via"' }
           ],
           tip: `<h3>Stress in <i>flūmen</i></h3><p><i><b>FLŪ</b>-men</i>, but in the ablative <i><b>FLŪ</b>-mi-ne</i> — "mi" is light, so stress stays on "flū". Long ū, like in "rule".</p>`
         }
@@ -444,13 +445,14 @@
             { la: 'Mūs parvus est.', en: 'The mouse is small.', alt: ['The mouse is little.'] },
             { la: 'Puella laeta est.', en: 'The girl is happy.', alt: ['The girl is glad.'] },
             { la: 'Magister bonus est.', en: 'The teacher is good.' },
-            { la: 'Errāre hūmānum est.', en: 'To err is human.', src: 'Latin proverb, after Seneca & Cicero' }
+            { la: 'Errāre hūmānum est.', en: 'To err is human.', src: 'Proverb (post-classical); cf. Cicero, Philippics 12.5 "cuiusvis hominis est errare"' }
           ],
-          tip: `<h3>Adjectives agree</h3><p>An adjective copies the gender of its noun: <i>puer laet<b>us</b></i>, <i>puella laet<b>a</b></i>, <i>templum magn<b>um</b></i>.</p>`
+          tip: `<h3>Adjectives agree</h3><p>An adjective copies the <b>gender, number and case</b> of its noun: <i>puer laet<b>us</b></i>, <i>puella laet<b>a</b></i>, <i>templum magn<b>um</b></i>.</p>
+<p>⚠️ Gender belongs to the noun, not the ending: <i>nauta</i> (sailor) is masculine → <i>nauta bon<b>us</b></i>; <i>manus</i> and <i>domus</i> are feminine → <i>manus parv<b>a</b></i>, <i>domus nov<b>a</b></i>.</p>`
         },
         {
           id: 'l_adj_2', title: 'Colours', icon: '🎨',
-          words: ['tristis', 'albus', 'niger', 'ruber', 'longus'],
+          words: ['tristis', 'albus', 'niger', 'ruber', 'longus', 'via'],
           sentences: [
             { la: 'Rosa rubra est.', en: 'The rose is red.' },
             { la: 'Fēlēs nigra est.', en: 'The cat is black.' },
@@ -470,10 +472,11 @@
           sentences: [
             { la: 'Trēs puellae cantant.', en: 'Three girls sing.', alt: ['Three girls are singing.'] },
             { la: 'Quattuor equī.', en: 'Four horses.' },
-            { la: 'Ūnus canis et duo fēlēs.', en: 'One dog and two cats.' },
-            { la: 'Gallia est omnis dīvīsa in partēs trēs.', en: 'All Gaul is divided into three parts.', alt: ['Gaul as a whole is divided into three parts.'], src: 'Caesar, Dē Bellō Gallicō 1.1' }
+            { la: 'Ūnus canis et duae fēlēs.', en: 'One dog and two cats.', note: '<i>duo</i> declines: <i>duo</i> (m./n.), <i>duae</i> (f.) — <i>fēlēs</i> is feminine.' },
+            { la: 'Gallia est omnis dīvīsa in partēs trēs.', en: 'All Gaul is divided into three parts.', alt: ['Gaul as a whole is divided into three parts.'], src: 'Caesar, Dē Bellō Gallicō 1.1', note: 'Here <i>in</i> + accusative (<i>partēs</i>) means <b>into</b> — motion or division. <i>in</i> + ablative means <b>in / on</b>.' }
           ],
           tip: `<h3>Plurals</h3><p><i>puella → puell<b>ae</b></i>, <i>equus → equ<b>ī</b></i>, <i>canis → can<b>ēs</b></i>. Verbs: <i>canta<b>t</b></i> (sings) → <i>canta<b>nt</b></i> (they sing).</p>
+<p><i>in</i> + <b>accusative</b> = "into": <i>in partēs</i> "into parts" (but <i>in silvā</i> = "in the forest").</p>
 <p>📜 Caesar opened his war diary with "Gallia est omnis dīvīsa in partēs trēs". Stress: <i>dī-<b>VĪ</b>-sa</i>, <i><b>PAR</b>-tēs</i>.</p>`
         },
         {
@@ -534,7 +537,7 @@
             { la: 'Senātus Populus+que Rōmānus', en: 'The Senate and the Roman People', alt: ['The Senate and People of Rome'], src: 'S·P·Q·R — official formula of the Roman state' }
           ],
           tip: `<h3>Enclitic -que = "and"</h3><p><i>-que</i> sticks to the end of a word and means "and": <i>Senātus Populus<b>que</b></i> = "the Senate <b>and</b> the People".</p>
-<p>It pulls the stress to the syllable right before it: <i><b>PO</b>-pu-lus</i> → <i>po-pu-<b>LUS</b>-que</i>!</p>`
+<p>The Roman grammarians say it pulls the stress to the syllable right before it: <i><b>LĪ</b>-mi-na</i> (thresholds) → <i>lī-mi-<b>NA</b>-que</i>. (In <i>po-pu-<b>LUS</b>-que</i> the normal rule gives the same result anyway.) Some modern scholars doubt how strictly this applied — but it's the standard teaching.</p>`
         }
       ]
     },
@@ -545,10 +548,10 @@
           id: 'l_cl_1', title: 'Seize the day', icon: '⏳',
           words: ['dies', 'tempus', 'lente', 'spero'],
           sentences: [
-            { la: 'Carpe diem.', en: 'Seize the day.', alt: ['Pluck the day.'], src: 'Horace, Odes 1.11' },
-            { la: 'Festīnā lentē.', en: 'Make haste slowly.', alt: ['Hurry slowly.'], src: 'Augustus, quoted by Suetonius' },
+            { la: 'Carpe diem.', en: 'Seize the day.', alt: ['Pluck the day.'], src: 'Horace, Odes 1.11.8' },
+            { la: 'Festīnā lentē.', en: 'Make haste slowly.', alt: ['Hurry slowly.'], src: 'Augustus\'s Greek motto σπεῦδε βραδέως, Suetonius, Augustus 25.4 (Latin rendering)' },
             { la: 'Tempus fugit.', en: 'Time flies.', alt: ['Time flees.'], src: 'after Vergil, Georgics 3.284' },
-            { la: 'Dum spīrō, spērō.', en: 'While I breathe, I hope.', src: 'Latin motto, after Cicero' }
+            { la: 'Dum spīrō, spērō.', en: 'While I breathe, I hope.', src: 'Post-classical motto; cf. Cicero, Ad Atticum 9.10.3' }
           ],
           tip: `<h3>Short and sharp</h3><p><i><b>CAR</b>-pe <b>DI</b>-em</i> — two syllables each, so stress the first. <i>fes-<b>TĪ</b>-nā <b>LEN</b>-tē</i> — long ī in the penult.</p>`
         },
@@ -557,11 +560,11 @@
           words: ['caesar', 'fortuna', 'amor'],
           sentences: [
             { la: 'Vēnī, vīdī, vīcī.', en: 'I came, I saw, I conquered.', src: 'Caesar, quoted by Suetonius, Dīvus Iūlius 37' },
-            { la: 'Ālea iacta est.', en: 'The die is cast.', src: 'Caesar at the Rubicon, Suetonius, Dīvus Iūlius 32' },
+            { la: 'Iacta ālea est.', altLa: ['Ālea iacta est.'], en: 'The die is cast.', alt: ['The die has been cast.'], src: 'Caesar at the Rubicon, Suetonius, Dīvus Iūlius 32 (popularly "Ālea iacta est")', note: 'Plutarch says Caesar actually said it in Greek, quoting the poet Menander.' },
             { la: 'Fortēs fortūna ad|iu|vat.', en: 'Fortune helps the brave.', alt: ['Fortune favours the brave.', 'Fortune favors the brave.'], src: 'Terence, Phormio 203' },
             { la: 'Omnia vincit Amor.', en: 'Love conquers all.', alt: ['Love conquers all things.'], src: 'Vergil, Eclogues 10.69' }
           ],
-          tip: `<h3>WAY-nee, WEE-dee, WEE-kee</h3><p>With classical V = W and C = K, Caesar's boast sounds nothing like "veni vidi vichi". And <i><b>Ā</b>-le-a <b>IAK</b>-ta est</i> — "le" is light, so stress the long ā.</p>`
+          tip: `<h3>WAY-nee, WEE-dee, WEE-kee</h3><p>With classical V = W and C = K, Caesar's boast sounds nothing like "veni vidi vichi". Suetonius wrote <i><b>IAK</b>-ta <b>Ā</b>-le-a est</i>: in <i>ālea</i> the penult "le" is light, so the stress goes to the antepenult — here that happens to be the long ā (its length is not the reason).</p>`
         }
       ]
     },
@@ -570,10 +573,10 @@
       lessons: [
         {
           id: 'l_cl_3', title: 'Cicero & Juvenal', icon: '⚖️',
-          words: ['cicero', 'humanus', 'astrum'],
+          words: ['cicero', 'humanus', 'astrum', 'gutta', 'lapis'],
           sentences: [
             { la: 'Ō tempora, ō mōrēs!', en: 'Oh the times, oh the customs!', alt: ['O the times, o the customs!', 'Oh the times, oh the morals!'], src: 'Cicero, In Catilīnam 1.2' },
-            { la: 'Quis custōdiet ipsōs custōdēs?', en: 'Who will guard the guards themselves?', alt: ['Who will watch the watchmen?'], src: 'Juvenal, Satires 6.347' },
+            { la: 'Quis custōdiet ipsōs custōdēs?', en: 'Who will guard the guards themselves?', alt: ['Who will watch the watchmen?', 'Who will guard the guardians themselves?', 'Who will watch the watchmen themselves?'], src: 'Juvenal, Satires 6.347' },
             { la: 'Mēns sāna in corpore sānō.', en: 'A healthy mind in a healthy body.', alt: ['A sound mind in a sound body.'], src: 'Juvenal, Satires 10.356' },
             { la: 'Gutta cavat lapidem.', en: 'A drop hollows the stone.', alt: ['Dripping water hollows stone.', 'The drop hollows the stone.'], src: 'Ovid, Epistulae ex Pontō 4.10.5' }
           ],
