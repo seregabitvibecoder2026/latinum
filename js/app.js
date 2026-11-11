@@ -9,7 +9,7 @@
   const S = window.SaveSystem, L = window.Latin;
   let DEVICE = S.getDeviceId();
   // Shown in the UI and in bug reports. Bump on every release — AND the ?v= in index.html (cache busting).
-  const APP_VERSION = '0.3.0-beta';
+  const APP_VERSION = '0.4.0-beta';
   const REPO_URL = 'https://github.com/seregabitvibecoder2026/latinum';
   const boot = S.load();
   let save = boot.save;

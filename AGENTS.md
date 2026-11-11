@@ -14,6 +14,8 @@
 | `js/course.js` | All content: `WORDS`, `GLOSS`, `UNITS` → lessons, `PARTS`, `REVIEW_IDS`. See "Adding lessons — the cheap way" | medium (IDs!) |
 | `js/app.js` | UI, exercises, XP, achievements | medium |
 | `css/style.css` | Styles, light/dark tokens | low |
+| `ROADMAP.md` | Future plans (not started). Read before planning new content | — |
+| `IMAGES.md` | Where emoji fall short + plan for generated images (not started) | — |
 | `tests/run-tests.js` | Test suite (no deps). **Run after every change** | — |
 | `tests/frozen-ids.json` | IDs that exist in users' saves. **Append-only** | — |
 | frozen storage keys | `latinum.save`, `latinum.save.backup`, `latinum.save.prereset`, `latinum.save.corrupt-*`, `latinum.deviceId` | **HIGH** |

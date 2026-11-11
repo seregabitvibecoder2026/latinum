@@ -45,7 +45,11 @@ const STRESS = {
   'amāmus': 'a-MĀ-mus', 'legimus': 'LE-gi-mus', 'discipulus': 'dis-CI-pu-lus', 'respondeō': 'res-PON-de-ō',
   'cubiculum': 'cu-BI-cu-lum', 'improbus': 'IM-pro-bus', 'aedificāvit': 'ae-di-fi-CĀ-vit', 'pugnāvērunt': 'pug-nā-VĒ-runt',
   'labōrāvimus': 'la-bō-RĀ-vi-mus', 'vidēs+ne': 'vi-DĒS-ne', 'repetītiō': 're-pe-TĪ-ti-ō', 'videō': 'VI-de-ō',
-  'Iūlia': 'IŪ-li-a', 'īnsula': 'ĪN-su-la', 'hodiē': 'HO-di-ē', 'docendō': 'do-CEN-dō', 'iam': 'IAM', 'audiunt': 'AU-di-unt'
+  'Iūlia': 'IŪ-li-a', 'īnsula': 'ĪN-su-la', 'hodiē': 'HO-di-ē', 'docendō': 'do-CEN-dō', 'iam': 'IAM', 'audiunt': 'AU-di-unt',
+  // v0.4
+  'audīmus': 'au-DĪ-mus', 'possumus': 'POS-su-mus', 'ambulābimus': 'am-bu-LĀ-bi-mus', 'ambulābāmus': 'am-bu-lā-BĀ-mus',
+  'appetēbat': 'ap-pe-TĒ-bat', 'coācta': 'co-ĀC-ta', 'sevēriōrum': 'se-vē-ri-Ō-rum', 'rūmōrēs+que': 'rū-mō-RĒS-que',
+  'iānua': 'IĀ-nu-a', 'Sabidius': 'Sa-BI-di-us', 'fortissimī': 'for-TIS-si-mī', 'incolunt': 'IN-co-lunt'
 };
 for (const [w, exp] of Object.entries(STRESS)) {
   test(`stress: ${w}`, () => {
