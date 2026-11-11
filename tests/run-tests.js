@@ -40,7 +40,12 @@ const STRESS = {
   'quattuor': 'QUAT-tu-or', 'populus+que': 'po-pu-LUS-que', 'virum+que': 'vi-RUM-que', 'custōdiet': 'cus-TŌ-di-et',
   'Italia': 'I-TA-li-a', 'dīvīsa': 'dī-VĪ-sa', 'decōrum': 'de-CŌ-rum', 'ad|iu|vat': 'AD-iu-vat', 'labōrō': 'la-BŌ-rō',
   'ambulō': 'AM-bu-lō', 'rosa': 'RO-sa', 'sōl': 'SŌL', 'patria': 'PA-tri-a', 'lingua': 'LIN-gua', 'dextra': 'DEX-tra',
-  'corpore': 'COR-po-re', 'rēgīna': 'rē-GĪ-na', 'Cicerō': 'CI-ce-rō', 'omnia': 'OM-ni-a', 'Iūlius': 'IŪ-li-us'
+  'corpore': 'COR-po-re', 'rēgīna': 'rē-GĪ-na', 'Cicerō': 'CI-ce-rō', 'omnia': 'OM-ni-a', 'Iūlius': 'IŪ-li-us',
+  // v0.3
+  'amāmus': 'a-MĀ-mus', 'legimus': 'LE-gi-mus', 'discipulus': 'dis-CI-pu-lus', 'respondeō': 'res-PON-de-ō',
+  'cubiculum': 'cu-BI-cu-lum', 'improbus': 'IM-pro-bus', 'aedificāvit': 'ae-di-fi-CĀ-vit', 'pugnāvērunt': 'pug-nā-VĒ-runt',
+  'labōrāvimus': 'la-bō-RĀ-vi-mus', 'vidēs+ne': 'vi-DĒS-ne', 'repetītiō': 're-pe-TĪ-ti-ō', 'videō': 'VI-de-ō',
+  'Iūlia': 'IŪ-li-a', 'īnsula': 'ĪN-su-la', 'hodiē': 'HO-di-ē', 'docendō': 'do-CEN-dō', 'iam': 'IAM', 'audiunt': 'AU-di-unt'
 };
 for (const [w, exp] of Object.entries(STRESS)) {
   test(`stress: ${w}`, () => {
@@ -67,6 +72,47 @@ test('lessons reference existing words', () => {
     l.words.forEach(w => ok(C.WORDS[w], `${l.id} references unknown word "${w}"`));
     (l.pairs || []).flat().forEach(w => ok(C.WORDS[w], `${l.id} pair references unknown word "${w}"`));
   }));
+});
+// all Latin a learner can tap: sentences, drills (+options), story lines
+const lessonTexts = l => [...(l.sentences || []).map(s => s.la), ...(l.drills || []).flatMap(d => [d.la.replace(/[{}]/g, ''), ...d.opts]),
+  ...(l.story ? l.story.lines.map(x => x.la) : [])];
+test('every tappable Latin word has a gloss (GLOSS or WORDS)', () => {
+  const known = new Set([...Object.keys(C.GLOSS), ...Object.values(C.WORDS).map(w => w.la.toLowerCase())]);
+  const miss = new Set();
+  C.UNITS.forEach(u => u.lessons.forEach(l => lessonTexts(l).forEach(t => L.tokenize(t).filter(x => x.word)
+    .forEach(x => { const c = L.clean(x.w).toLowerCase(); if (!known.has(c)) miss.add(c); }))));
+  eq([...miss], [], 'add these to GLOSS in course.js');
+});
+test('drills are well-formed (one {gap}, distinct options)', () => {
+  C.UNITS.forEach(u => u.lessons.forEach(l => (l.drills || []).forEach(d => {
+    const m = d.la.match(/\{([^}]+)\}/g);
+    ok(m && m.length === 1, `${l.id}: drill needs exactly one {gap}: ${d.la}`);
+    const ans = m[0].slice(1, -1);
+    ok(Array.isArray(d.opts) && d.opts.length >= 1, `${l.id}: drill has no wrong options`);
+    ok(!d.opts.map(o => o.toLowerCase()).includes(ans.toLowerCase()), `${l.id}: option equals answer: ${d.la}`);
+    ok(d.en, `${l.id}: drill without English`);
+  })));
+});
+test('stories are well-formed', () => {
+  C.UNITS.forEach(u => u.lessons.forEach(l => { if (!l.story) return;
+    ok(l.story.lines.length >= 3 && l.story.lines.every(x => x.la && x.en), `${l.id}: story lines`);
+    l.story.qs.forEach(q => { ok(q.a && q.opts.length >= 2 && !q.opts.includes(q.a), `${l.id}: question "${q.q}"`);
+      ok(q.line === undefined || l.story.lines[q.line], `${l.id}: q.line out of range`); });
+  }));
+});
+test('every unit has exactly one review lesson, last in the unit, covering its lessons', () => {
+  C.UNITS.forEach(u => {
+    const r = u.lessons.filter(l => l.review);
+    eq(r.length, 1, u.id + ' review count');
+    ok(u.lessons[u.lessons.length - 1].review, u.id + ': review must be last');
+    eq(r[0].from, u.lessons.filter(l => !l.review && !l.hidden).map(l => l.id), u.id + ': review sources');
+  });
+});
+test('every unit belongs to a part', () => {
+  const parts = new Set(C.PARTS.map(p => p.n));
+  C.UNITS.forEach(u => ok(parts.has(u.part), u.id + ' has no valid part'));
+  const seq = C.UNITS.map(u => u.part);
+  eq(seq, seq.slice().sort((a, b) => a - b), 'units must be ordered by part');
 });
 test('FROZEN ids still exist (never delete ids that users may have saved)', () => {
   const fr = JSON.parse(fs.readFileSync(path.join(__dirname, 'frozen-ids.json'), 'utf8'));

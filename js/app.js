@@ -9,7 +9,7 @@
   const S = window.SaveSystem, L = window.Latin;
   let DEVICE = S.getDeviceId();
   // Shown in the UI and in bug reports. Bump on every release.
-  const APP_VERSION = '0.2.0-beta';
+  const APP_VERSION = '0.3.0-beta';
   const REPO_URL = 'https://github.com/seregabitvibecoder2026/latinum';
   const boot = S.load();
   let save = boot.save;
@@ -99,22 +99,40 @@
     /** Speak a word with the stress forced onto syllable idx (for "hear the stress" drills). */
     speakForced(word, idx) {
       const v = this.chosen(); if (!v || !save.settings.tts) return;
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(L.ttsWord(word, v.lang.slice(0, 2).toLowerCase(), idx));
-      u.voice = v; u.lang = v.lang; u.rate = save.settings.ttsRate * 0.9;
-      speechSynthesis.speak(u);
+      this._say(L.ttsWord(word, v.lang.slice(0, 2).toLowerCase(), idx), v, save.settings.ttsRate * 0.9);
     },
     speak(text, rate) {
       if (!this.supported() || !save.settings.tts) return;
       const v = this.chosen();
       if (!v) return;
-      speechSynthesis.cancel();
-      const lang = v.lang.slice(0, 2).toLowerCase();
-      const u = new SpeechSynthesisUtterance(L.ttsText(text, lang));
-      u.voice = v; u.lang = v.lang; u.rate = rate || save.settings.ttsRate;
-      speechSynthesis.speak(u);
+      this._say(L.ttsText(text, v.lang.slice(0, 2).toLowerCase()), v, rate || save.settings.ttsRate);
+    },
+    stop() { this._tok = (this._tok || 0) + 1; if (this.supported()) speechSynthesis.cancel(); },
+    /**
+     * Only the latest request is ever spoken. Chrome may drop or delay an utterance queued in the
+     * same tick as cancel(), so after cancelling we wait a moment; a newer tap supersedes older ones.
+     * The utterance is kept on `this` so it is not garbage-collected mid-speech.
+     */
+    _say(str, v, rate) {
+      const tok = this._tok = (this._tok || 0) + 1;
+      const busy = speechSynthesis.speaking || speechSynthesis.pending;
+      if (busy) speechSynthesis.cancel();
+      const go = () => {
+        if (tok !== this._tok) return;
+        const u = new SpeechSynthesisUtterance(str);
+        u.voice = v; u.lang = v.lang; u.rate = rate;
+        this.u = u;
+        if (speechSynthesis.paused) speechSynthesis.resume();
+        speechSynthesis.speak(u);
+      };
+      if (busy) setTimeout(go, 60); else go();
     }
   };
+  /** Speak after a short delay — but only if the learner is still on that same exercise. */
+  function sayLater(ex, text, ms = 250) {
+    const rid = Run.id;
+    setTimeout(() => { if (Run.active && Run.id === rid && Run.cur === ex && Run.state === 'answer') Voice.speak(text); }, ms);
+  }
 
   /** Hide all 🔊 buttons when no usable voice exists (instead of dead buttons). */
   function syncVoiceClass() { document.body.classList.toggle('novoice', !Voice.available()); }
@@ -199,12 +217,23 @@
   // ================= progress model =================
   const ALL_LESSONS = UNITS.flatMap(u => u.lessons.filter(l => !l.hidden).map(l => ({ u, l })));
   const lst = id => save.lessons[id] || { lvl: 0, best: 0, last: 0, n: 0 };
+  /**
+   * A lesson opens when the previous REGULAR lesson is done. Unit reviews (🏆) open when every
+   * lesson of their unit is done, and never block the path — so old progress stays unlocked.
+   */
   function unlocked(id) {
-    if (save.settings.unlockAll) return true;
+    if (save.settings.unlockAll || lst(id).lvl > 0) return true;
     const i = ALL_LESSONS.findIndex(x => x.l.id === id);
-    if (i <= 0) return true;
-    return lst(ALL_LESSONS[i - 1].l.id).lvl > 0 || lst(id).lvl > 0;
+    if (i < 0) return false;
+    const { u, l } = ALL_LESSONS[i];
+    if (l.review) return u.lessons.filter(x => !x.hidden && !x.review).every(x => lst(x.id).lvl > 0);
+    const prev = ALL_LESSONS.slice(0, i).filter(x => !x.l.review).pop();
+    return !prev || lst(prev.l.id).lvl > 0;
   }
+  // ---- medals for replaying a lesson (Duolingo-style): 1st replay bronze, 2nd silver, 3rd gold ----
+  const MEDALS = [null, null, ['bronze', '🥉', 'Bronze'], ['silver', '🥈', 'Silver'], ['gold', '🥇', 'Gold']];
+  const medalOf = n => MEDALS[Math.min(4, n || 0)];
+  const MEDAL_XP = { bronze: 5, silver: 10, gold: 15 };
   const need = n => 25 * (n - 1) * n;
   function levelInfo(xp) {
     xp = Math.max(0, Math.min(1e9, Number(xp) || 0));
@@ -254,7 +283,11 @@
     { id: 'arena_20', icon: '⚔️', name: 'Gladiātor', desc: 'Score 20 in the Accent Arena', test: () => save.records.arenaBest >= 20, prog: () => [save.records.arenaBest, 20] },
     { id: 'arena_40', icon: '🦁', name: 'Victor', desc: 'Score 40 in the Accent Arena', test: () => save.records.arenaBest >= 40, prog: () => [save.records.arenaBest, 40] },
     { id: 'all_done', icon: '🏛️', name: 'Opus perfectum', desc: 'Finish every lesson in the course', test: () => ALL_LESSONS.every(x => lst(x.l.id).lvl > 0) },
-    { id: 'backup', icon: '💾', name: 'Tabellārius', desc: 'Save your progress to a file or code', test: () => save.lastExportAt > 0 }
+    { id: 'backup', icon: '💾', name: 'Tabellārius', desc: 'Save your progress to a file or code', test: () => save.lastExportAt > 0 },
+    { id: 'fabula_1', icon: '📖', name: 'Fābulātor', desc: 'Read your first Latin story', test: () => ALL_LESSONS.some(x => x.l.story && lst(x.l.id).lvl > 0) },
+    { id: 'review_1', icon: '🏆', name: 'Probātus', desc: 'Pass a unit review', test: () => ALL_LESSONS.some(x => x.l.review && lst(x.l.id).lvl > 0) },
+    { id: 'medal_gold', icon: '🥇', name: 'Aurum', desc: 'Earn a gold medal (replay a lesson 3 times)', test: () => ALL_LESSONS.some(x => lst(x.l.id).n >= 4) },
+    { id: 'medal_gold_10', icon: '👑', name: 'Thēsaurus', desc: '10 gold medals', test: () => ALL_LESSONS.filter(x => lst(x.l.id).n >= 4).length >= 10, prog: () => [ALL_LESSONS.filter(x => lst(x.l.id).n >= 4).length, 10] }
   ];
   // ================= daily quests =================
   // Stored in save.ext.daily (ext = free space, see AGENTS.md). Resets each day.
@@ -360,24 +393,32 @@
       scr.appendChild(b);
     }
     if (S.totalXP(save) > 0) scr.appendChild(el(questsHTML()));
-    let k = 0;
-    const firstOpen = ALL_LESSONS.find(x => unlocked(x.l.id) && lst(x.l.id).lvl === 0);
+    let k = 0, part = 0;
+    const firstOpen = ALL_LESSONS.find(x => !x.l.review && unlocked(x.l.id) && lst(x.l.id).lvl === 0);
+    const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
     UNITS.forEach(u => {
+      if (u.part && u.part !== part) {
+        part = u.part;
+        const P = (window.Course.PARTS || []).find(p => p.n === part);
+        if (P) scr.appendChild(el(`<div class="parthead"><div class="pnum">PARS ${ROMAN[part] || part}</div><h2>${esc(P.la)} <span class="muted">· ${esc(P.en)}</span></h2><p>🎯 ${P.goal}</p></div>`));
+      }
       const ls = u.lessons.filter(l => !l.hidden);
       const done = ls.filter(l => lst(l.id).lvl > 0).length;
       const sec = el(`<section class="unit" style="--uc:${u.color}">
-        <div class="uhead"><div class="uicon">${u.icon}</div><div><h2>${esc(u.title)}</h2><p>${esc(u.sub)} · ${done}/${ls.length}</p></div></div>
+        <div class="uhead"><div class="uicon">${u.icon}</div><div><h2>${esc(u.title)}</h2><p>${esc(u.sub)} · ${done}/${ls.length}</p>${u.gram ? `<p class="ugram">🧩 ${esc(u.gram)}</p>` : ''}</div></div>
         <div class="path"></div></section>`);
       const path = $('.path', sec);
       ls.forEach(l => {
         const s = lst(l.id), open = unlocked(l.id), isNext = firstOpen && firstOpen.l.id === l.id;
-        const cls = !open ? 'locked' : s.lvl >= 5 ? 'gold' : s.lvl > 0 ? 'done' : 'open';
-        const hasQuote = (l.sentences || []).some(x => x.src);
+        const md = medalOf(s.n);
+        const cls = !open ? 'locked' : md ? 'medal-' + md[0] : s.lvl > 0 ? 'done' : 'open';
+        const badge = l.story ? '📖' : (l.sentences || []).some(x => x.src) ? '📜' : '';
         const n = el(`<div class="node-wrap" style="transform:translateX(${OFFS[k++ % OFFS.length]}px)">
           ${isNext ? '<div class="start-tag">START</div>' : ''}
-          <button class="node ${cls} ${isNext ? 'next' : ''}" aria-label="${esc(l.title)}">
+          <button class="node ${cls} ${isNext ? 'next' : ''} ${l.review ? 'review' : ''}" aria-label="${esc(l.title)}">
             <span class="nicon">${open ? l.icon || '⭐' : '🔒'}</span>
-            ${hasQuote ? '<span class="qbadge">📜</span>' : ''}
+            ${badge ? `<span class="qbadge">${badge}</span>` : ''}
+            ${md ? `<span class="medal">${md[1]}</span>` : ''}
           </button>
           <div class="crowns">${s.lvl > 0 ? '★'.repeat(Math.min(5, s.lvl)) + '☆'.repeat(Math.max(0, 5 - s.lvl)) : ''}</div>
           <div class="nlabel">${esc(l.title)}</div></div>`);
@@ -392,13 +433,18 @@
   async function lessonPopup(u, l) {
     const s = lst(l.id), open = unlocked(l.id);
     const words = l.words.map(id => WORDS[id]).filter(Boolean);
+    const md = medalOf(s.n), nextMd = s.n >= 1 && s.n < 4 ? medalOf(s.n + 1) : null;
+    const medalRow = s.n >= 1 ? `<div class="medals">${[2, 3, 4].map(i => `<span class="${s.n >= i ? 'got' : ''}" title="${MEDALS[i][2]}">${MEDALS[i][1]}</span>`).join('')}</div>
+      <p class="muted small">${nextMd ? `Replay for <b>${nextMd[1]} ${nextMd[2]}</b> · +${MEDAL_XP[nextMd[0]]} bonus XP` : '🥇 All medals earned!'}</p>` : '';
     const html = `<div class="lp" style="--uc:${u.color}"><div class="lpicon">${l.icon || '⭐'}</div><h2>${esc(l.title)}</h2>
-      <p class="muted">${esc(u.title)} · ${s.lvl > 0 ? `Level ${s.lvl}/5 · best ${s.best}%` : 'New lesson'}</p>
-      <div class="chips">${words.map(w => `<span class="chip">${w.img} ${wordHTML(w.la, { dots: false })}</span>`).join('')}</div>
-      ${open ? '' : '<p class="muted">🔒 Finish the previous lesson first (or enable "Unlock all" in Profile).</p>'}</div>`;
+      <p class="muted">${esc(u.title)} · ${s.lvl > 0 ? `Level ${s.lvl}/5 · best ${s.best}%${md ? ' · ' + md[1] : ''}` : 'New lesson'}</p>
+      ${l.gram ? `<p class="lgram">${l.review ? '🏆' : l.story ? '📖' : '🧩'} ${esc(l.gram)}</p>` : ''}
+      ${medalRow}
+      <div class="chips">${words.slice(0, 12).map(w => `<span class="chip">${w.img} ${wordHTML(w.la, { dots: false })}</span>`).join('')}${words.length > 12 ? `<span class="chip">+${words.length - 12}</span>` : ''}</div>
+      ${open ? '' : `<p class="muted">🔒 ${l.review ? 'Finish every lesson of this unit to unlock the review.' : 'Finish the previous lesson first'} (or enable "Unlock all" in Profile).</p>`}</div>`;
     const btns = [{ label: 'Close', value: 'x' }];
     if (l.tip) btns.unshift({ label: '💡 Tips', value: 'tip' });
-    if (open) btns.push({ label: s.lvl >= 5 ? 'Practise ★' : s.lvl > 0 ? `Level up → ${s.lvl + 1}` : 'Start', primary: true, value: 'go' });
+    if (open) btns.push({ label: s.lvl === 0 ? 'Start' : nextMd ? `Replay → ${nextMd[1]}` : s.lvl < 5 ? `Level up → ${s.lvl + 1}` : 'Practise ★', primary: true, value: 'go' });
     const r = await modal(html, btns);
     if (r === 'tip') { await modal(`<div class="tip">${l.tip}</div>`, [{ label: 'Got it', primary: true }]); lessonPopup(u, l); }
     if (r === 'go') {
@@ -457,7 +503,29 @@
     return [...s].filter(w => L.analyze(w).n >= 2);
   }
 
+  const formEx = d => ({ type: 'form', d });
+  /** 🏆 Unit review: a mix of every topic of the unit — no new words, just recall. */
+  function buildReview(lesson) {
+    const src = (lesson.from || []).map(id => window.Course.LESSON_INDEX[id]).filter(Boolean).map(x => x.lesson);
+    const words = lesson.words.filter(isWord), quiz = words.filter(id => !WORDS[id].proper);
+    const pool = wordPool(words), items = [];
+    const sentences = src.flatMap(l => l.sentences || []), drills = src.flatMap(l => l.drills || []);
+    shuffle(quiz).slice(0, 7).forEach((id, i) => items.push(mk(['pic', 'la2en', 'en2la', 'type'][i % 4], id, pool)));
+    shuffle(lesson.pairs || []).slice(0, 2).forEach(p => items.push({ type: 'macron', pair: p, target: pick(p) }));
+    const cands = stressCandidates(words, sentences);
+    cands.slice(0, lesson.focus === 'stress' ? 6 : 3).forEach((w, i) => items.push({ type: ['stressTap', 'stressPick', 'weigh'][i % 3], word: w }));
+    shuffle(drills).slice(0, 5).forEach(d => items.push(formEx(d)));
+    shuffle(sentences).slice(0, 4).forEach((s, i) => items.push({ type: i % 2 ? 'buildLa' : 'buildEn', s }));
+    src.filter(l => l.story).forEach(l => items.push({ type: 'storyQ', story: l.story, q: pick(l.story.qs) }));
+    if (Voice.available() && save.settings.listening) shuffle(quiz).slice(0, 2).forEach(id => items.push(mk('listen', id, pool)));
+    const match = { type: 'match', ids: matchSet(shuffle(quiz)) };
+    if (match.ids.length >= 4) items.push(match);
+    if (lst(lesson.id).lvl >= 2) items.forEach(x => { x.plain = true; });
+    return shuffle(items);
+  }
+
   function buildLesson(lesson) {
+    if (lesson.review) return buildReview(lesson);
     const lvl = lst(lesson.id).lvl;
     const words = lesson.words.filter(id => WORDS[id]);
     const pool = wordPool(words);
@@ -468,6 +536,13 @@
       if (WORDS[id].proper) continue;
       if (lvl === 0 || Math.random() < 0.5) head.push(mk(canPic(id) && Math.random() < 0.6 ? 'pic' : 'la2en', id, pool));
     }
+    // 📖 the story is read right after the new words, then its comprehension questions
+    if (lesson.story) {
+      head.push({ type: 'story', story: lesson.story });
+      lesson.story.qs.forEach(q => head.push({ type: 'storyQ', story: lesson.story, q }));
+    }
+    // 🧩 grammar drills: all of them the first time, a selection on replays
+    shuffle(lesson.drills || []).slice(0, lvl === 0 ? 8 : 5).forEach(d => mid.push(formEx(d)));
     (lesson.pairs || []).forEach(p => mid.push({ type: 'macron', pair: p, target: pick(p) }));
     const cands = stressCandidates(words, lesson.sentences);
     const has3 = cands.some(w => L.analyze(w).n >= 3);
@@ -513,6 +588,7 @@
     if (kind === 'sentences') {
       return shuffle(doneSentences()).slice(0, 8).map((s, i) => ({ type: i % 2 ? 'buildLa' : 'buildEn', s }));
     }
+    if (kind === 'grammar') return shuffle(doneDrills()).slice(0, 10).map(formEx);
     const weak = learned.filter(id => !WORDS[id].proper).sort((a, b) => wordEff(a) - wordEff(b)).slice(0, 8);
     const items = weak.map(id => mk(pick(Voice.available() ? ['la2en', 'en2la', 'type', 'listen', 'pic'] : ['la2en', 'en2la', 'type', 'pic']), id, pool));
     stressCandidates(weak).slice(0, 2).forEach(w => items.push({ type: 'stressTap', word: w }));
@@ -520,6 +596,9 @@
     return shuffle(items);
   }
   const doneSentences = () => ALL_LESSONS.filter(x => lst(x.l.id).lvl > 0).flatMap(x => x.l.sentences || []);
+  const doneDrills = () => ALL_LESSONS.filter(x => lst(x.l.id).lvl > 0).flatMap(x => x.l.drills || []);
+  /** Info screens (no answer to check): new word, story text. */
+  const isInfo = t => t === 'teach' || t === 'story';
 
   // ================= lesson runner =================
   const PRAISE = [['Optimē!', 'excellent'], ['Bene!', 'good'], ['Euge!', 'bravo'], ['Rēctē!', 'correct'], ['Mīrābile!', 'wonderful'], ['Pulchrē!', 'beautiful'], ['Ita vērō!', 'yes indeed']];
@@ -548,15 +627,16 @@
     $('#lskip').onclick = () => { if (Run.state === 'answer' && Run.handle && Run.handle.reveal) feedback(Run.handle.reveal()); };
     nextEx();
   }
-  function endLesson() { Run.active = false; window.speechSynthesis && window.speechSynthesis.cancel(); $('#lesson') && $('#lesson').remove(); $('#app').classList.remove('in-lesson'); go(current); }
+  function endLesson() { Run.active = false; Voice.stop(); $('#lesson') && $('#lesson').remove(); $('#app').classList.remove('in-lesson'); go(current); }
   function updateBar() {
-    const left = Run.queue.filter(x => x.type !== 'teach').length;
-    const tot = Run.done + left + (Run.cur && Run.cur.type !== 'teach' && Run.state === 'answer' ? 1 : 0);
+    const left = Run.queue.filter(x => !isInfo(x.type)).length;
+    const tot = Run.done + left + (Run.cur && !isInfo(Run.cur.type) && Run.state === 'answer' ? 1 : 0);
     $('#lesson .fill').style.width = (tot ? (Run.done / tot) * 100 : 0) + '%';
     $('#lesson .combo').innerHTML = Run.combo >= 3 ? `<span class="cflame">🔥 ${Run.combo}</span>` : '';
   }
   function nextEx() {
     $$('.gloss').forEach(g => g.remove());
+    Voice.stop(); // audio belongs to the exercise it was started in
     if (!Run.queue.length) return finishLesson();
     Run.cur = Run.queue.shift();
     Run.selectIndex = null;
@@ -564,7 +644,7 @@
     const body = $('#lbody'), foot = $('#lfoot'), go = $('#lgo'), skip = $('#lskip');
     body.innerHTML = ''; body.className = 'pop'; void body.offsetWidth; body.classList.add('in');
     foot.className = 'lfoot'; $('#lfb').innerHTML = '';
-    const teach = Run.cur.type === 'teach';
+    const teach = isInfo(Run.cur.type);
     go.textContent = teach ? 'Continue' : 'Check'; go.disabled = !teach;
     skip.style.visibility = teach || Run.cur.type === 'match' ? 'hidden' : 'visible';
     go.style.visibility = Run.cur.type === 'match' ? 'hidden' : 'visible';
@@ -578,7 +658,7 @@
   }
   function onGo() {
     if (Run.state === 'feedback') return nextEx();
-    if (Run.cur.type === 'teach') { touchWord(Run.cur.id); return nextEx(); }
+    if (isInfo(Run.cur.type)) { if (Run.cur.id) touchWord(Run.cur.id); return nextEx(); }
     if ($('#lgo').disabled || !Run.handle.check) return;
     const res = Run.handle.check();
     if (res) feedback(res);
@@ -633,14 +713,17 @@
       if (perfect) { S.bump(save, DEVICE, 'perfect'); dailyBump('perfect'); }
     }
     checkQuests();
-    let lvlUp = null;
+    let lvlUp = null, medal = null;
     if (Run.lesson && !Run.practiceKind) {
       const s = save.lessons[Run.lesson.id] || (save.lessons[Run.lesson.id] = { lvl: 0, best: 0, last: 0, n: 0 });
       if (s.lvl < 5) { s.lvl++; lvlUp = s.lvl; }
       s.best = Math.max(s.best, acc); s.last = Date.now(); s.n++;
+      // a NEW medal on this replay → one-time bonus XP (n only grows, so each medal pays once)
+      if (s.n >= 2 && s.n <= 4) { medal = medalOf(s.n); S.addXP(save, DEVICE, MEDAL_XP[medal[0]]); }
     }
     checkAchievements();
     commit();
+    const xpAll = xp + (medal ? MEDAL_XP[medal[0]] : 0);
     const lvAfter = levelInfo(S.totalXP(save)).lvl;
     const secs = Math.round((Date.now() - Run.t0) / 1000);
     Sfx.play('done'); confetti();
@@ -654,18 +737,19 @@
       <h1>${perfect ? 'Sine errōre!' : 'Lesson complete!'}</h1>
       <p class="muted">${perfect ? 'Flawless — no mistakes' : 'Bene factum — well done'}</p>
       <div class="rcards">
-        <div class="rc gold"><small>TOTAL XP</small><b class="count" data-to="${xp}">0</b></div>
+        <div class="rc gold"><small>TOTAL XP</small><b class="count" data-to="${xpAll}">0</b></div>
         <div class="rc green"><small>ACCURACY</small><b>${acc}%</b></div>
         <div class="rc purple"><small>BEST COMBO</small><b>🔥${Run.maxCombo}</b></div>
         <div class="rc blue"><small>TIME</small><b>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}</b></div>
       </div>
-      <div class="xpbreak muted">${base} ${real ? 'lesson' : 'practice'} + ${Run.firstTry} answers${comboBonus ? ` + ${comboBonus} combo` : ''}${perfectBonus ? ' + 5 perfect' : ''}</div>
+      <div class="xpbreak muted">${base} ${real ? 'lesson' : 'practice'} + ${Run.firstTry} answers${comboBonus ? ` + ${comboBonus} combo` : ''}${perfectBonus ? ' + 5 perfect' : ''}${medal ? ` + ${MEDAL_XP[medal[0]]} medal` : ""}</div>
       ${Run.missedWords.size + Run.missedStress.size ? '<button class="btn" id="revmist">🔁 Review my mistakes</button>' : ''}
       ${goalHit ? `<div class="lvup goal">🎯 Daily goal reached! 🔥 Streak: ${S.streak(save)} day${S.streak(save) === 1 ? '' : 's'}</div>` : ''}
+      ${medal ? `<div class="lvup medalup ${medal[0]}">${medal[1]} ${medal[2]} medal! <small>+${MEDAL_XP[medal[0]]} bonus XP</small></div>` : ''}
       ${lvlUp ? `<div class="lvup">Lesson level ${lvlUp}/5 <span>${'★'.repeat(Math.min(5, lvlUp))}${'☆'.repeat(Math.max(0, 5 - lvlUp))}</span></div>` : ''}
       ${lvAfter > lvBefore ? `<div class="lvup big">⬆️ Level ${lvAfter} — ${rankOf(lvAfter)[1]} <small>(${rankOf(lvAfter)[2]})</small></div>` : ''}
     </div>`;
-    const c = $('.count'); let v = 0; const step = () => { v = Math.min(xp, v + Math.ceil(xp / 25)); c.textContent = '+' + v; if (v < xp) requestAnimationFrame(step); }; step();
+    const c = $(".count"); let v = 0; const step = () => { v = Math.min(xpAll, v + Math.ceil(xpAll / 25)); c.textContent = "+" + v; if (v < xpAll) requestAnimationFrame(step); }; step();
     Run.state = 'feedback';
     const mist = { words: [...Run.missedWords], stress: [...Run.missedStress] };
     const rv = $('#revmist'); if (rv) rv.onclick = () => startLesson(null, 'mistakes', mist);
@@ -700,9 +784,11 @@
     const w = WORDS[id];
     return `<div class="fw">${w.img} ${wordHTML(w.la)} <span class="muted">[${esc(L.respell(w.la))}]</span> = <b>${esc(w.en)}</b></div>`;
   }
-  function choiceEx(ex, body, api, prompt, render, cls = '') {
+  /** speakOpts: options show Latin → say the word the moment its block is tapped. */
+  function choiceEx(ex, body, api, prompt, render, cls = '', speakOpts = false) {
     body.innerHTML = prompt;
-    const ol = optionList(body, ex.opts, render, () => api.ready(true));
+    let spoken = null;
+    const ol = optionList(body, ex.opts, render, (i, id) => { if (speakOpts) { Voice.speak(WORDS[id].la); spoken = id; } api.ready(true); });
     if (cls) $('.opts', body).classList.add(cls);
     const right = ex.opts.indexOf(ex.id);
     const resolve = ok => {
@@ -710,7 +796,8 @@
       const sel = ol.get();
       let you = '';
       if (!ok && sel >= 0 && ex.opts[sel] !== ex.id) { const o = WORDS[ex.opts[sel]]; you = `<div class="you">You chose: ${o.img} ${wordHTML(o.la, { dots: false })} = ${esc(o.en)}</div>`; }
-      return { ok, html: you + wordFeedback(ex.id), say: WORDS[ex.id].la };
+      // don't repeat the word the learner has just heard by tapping it
+      return { ok, html: you + wordFeedback(ex.id), say: spoken === ex.id ? undefined : WORDS[ex.id].la };
     };
     return { check: () => resolve(ol.get() === right), reveal: () => resolve(false) };
   }
@@ -743,8 +830,52 @@
         <div class="ten">${esc(w.en)}</div>
         ${w.info ? `<div class="tinfo">${esc(w.info)}</div>` : ''}
         ${L.analyze(w.la).n > 1 ? `<div class="texp">🎯 ${L.explain(w.la)}</div>` : ''}</div>`;
-      setTimeout(() => Voice.speak(w.la), 250);
+      sayLater(ex, w.la);
       return {};
+    },
+    story(ex, body) {
+      const st = ex.story;
+      body.innerHTML = `<div class="ttl">📖 Fābula: <i>${esc(st.title)}</i></div>
+        <p class="muted center small">Tap a word for its meaning · 🔊 listen · 👁️ translation</p>
+        <div class="story">${st.lines.map(ln => `<div class="sline"><div class="sla">${textHTML(ln.la, { plain: ex.plain })}</div>
+          <div class="sbtns">${speakBtn(ln.la)}<button class="spk eye" aria-label="Show translation">👁️</button></div>
+          <div class="sen" hidden>${esc(ln.en)}</div></div>`).join('')}</div>
+        <button class="btn small" id="readall">🔊 Read it all</button>`;
+      $$('.eye', body).forEach(b => b.onclick = e => { e.stopPropagation(); const s = $('.sen', b.closest('.sline')); s.hidden = !s.hidden; });
+      $('#readall', body).onclick = () => Voice.speak(st.lines.map(l => l.la).join(' '));
+      return {};
+    },
+    storyQ(ex, body, api) {
+      const st = ex.story, q = ex.q, opts = shuffle([q.a, ...q.opts]), right = opts.indexOf(q.a);
+      body.innerHTML = `<div class="ttl">${esc(q.q)}</div>
+        <details class="story mini"><summary>📖 Reread <i>${esc(st.title)}</i></summary>${st.lines.map(ln => `<div class="sla">${textHTML(ln.la, { plain: true })}</div>`).join('')}</details>`;
+      const ol = optionList(body, opts, o => esc(o), () => api.ready(true));
+      const ln = st.lines[q.line];
+      const resolve = ok => { ol.mark(right); return { ok, html: `<div><b>${esc(q.a)}</b></div>${ln ? `<div class="fs">${textHTML(ln.la)}</div><div class="muted">${esc(ln.en)}</div>` : ''}`, say: ln && ln.la }; };
+      return { check: () => resolve(ol.get() === right), reveal: () => resolve(false) };
+    },
+    form(ex, body, api) {
+      const d = ex.d, ans = d.la.match(/\{([^}]+)\}/)[1], full = d.la.replace(/[{}]/g, '');
+      const [pre, post] = d.la.split(/\{[^}]+\}/);
+      // a gap at the start of the sentence would give the answer away by its capital letter
+      allTokens();
+      const atStart = !/[A-Za-zāēīōū]/.test(pre);
+      const show = o => atStart && !PROPER.has(o.toLowerCase()) ? o.toLowerCase() : o;
+      const opts = shuffle([ans, ...d.opts]), right = opts.indexOf(ans);
+      body.innerHTML = `<div class="ttl">Pick the right form</div>
+        <div class="sent"><div class="owl">🦉</div><div class="bubble">${esc(d.en)}</div></div>
+        <div class="gap">${textHTML(pre, { plain: ex.plain })}<span class="blank">?</span>${textHTML(post, { plain: ex.plain })}</div>`;
+      let spoken = null;
+      const ol = optionList(body, opts, o => wordHTML(show(o), { dots: false, plain: ex.plain }), (i, o) => { Voice.speak(o); spoken = o; api.ready(true); });
+      const resolve = ok => {
+        ol.mark(right);
+        const blank = $('.blank', body); blank.textContent = ans; blank.classList.add(ok ? 'right' : 'wrong');
+        const sel = ol.get();
+        const you = !ok && sel >= 0 ? `<div class="you">You chose: <b>${esc(show(opts[sel]))}</b></div>` : '';
+        const words = laTokens(full).map(t => LA2WORD[t.toLowerCase()]).filter(id => id && save.words[id]);
+        return { ok, html: `${you}<div class="fs">${textHTML(full)}</div><div>${esc(d.en)}</div>${d.why ? `<div class="gnote">💡 ${d.why}</div>` : ''}`, say: spoken === ans && full.split(/\s+/).length < 2 ? undefined : full, words: ok ? words : [] };
+      };
+      return { check: () => resolve(ol.get() === right), reveal: () => resolve(false) };
     },
     pic(ex, body, api) {
       const w = WORDS[ex.id];
@@ -753,18 +884,18 @@
     },
     la2en(ex, body, api) {
       const w = WORDS[ex.id];
-      setTimeout(() => Voice.speak(w.la), 200);
+      sayLater(ex, w.la, 200);
       return choiceEx(ex, body, api, `<div class="ttl">What does this mean?</div><div class="prompt">${wordHTML(w.la, { plain: ex.plain })} ${speakBtn(w.la)}</div>`,
         id => esc(WORDS[id].en));
     },
     en2la(ex, body, api) {
       const w = WORDS[ex.id];
       return choiceEx(ex, body, api, `<div class="ttl">How do you say this in Latin?</div><div class="prompt">${w.img} “${esc(w.en)}”</div>`,
-        id => wordHTML(WORDS[id].la, { dots: false, plain: ex.plain }));
+        id => wordHTML(WORDS[id].la, { dots: false, plain: ex.plain }), '', true);
     },
     listen(ex, body, api) {
       const w = WORDS[ex.id];
-      setTimeout(() => Voice.speak(w.la), 250);
+      sayLater(ex, w.la);
       return choiceEx(ex, body, api, `<div class="ttl">What do you hear?</div><div class="prompt"><button class="spk huge" data-say="${esc(w.la)}">🔊</button><button class="spk huge slow" data-say="${esc(w.la)}">🐢</button></div>`,
         id => wordHTML(WORDS[id].la, { plain: true }));
     },
@@ -845,17 +976,18 @@
     stressHear(ex, body, api) {
       const a = L.analyze(ex.word), id = LA2WORD[a.display.toLowerCase()];
       const idxs = shuffle([a.n - 1, a.n - 2, a.n - 3].filter(i => i >= 0));
+      // nothing plays by itself: the learner sees the word and taps each version to hear it
       body.innerHTML = `<div class="ttl">Which recording has the <span class="hl">right stress</span>?</div>
-        <div class="prompt">${esc(a.display)}</div>${id ? `<div class="muted center">${WORDS[id].img} ${esc(WORDS[id].en)}</div>` : ''}`;
+        <div class="prompt">${esc(a.display)}</div>${id ? `<div class="muted center">${WORDS[id].img} ${esc(WORDS[id].en)}</div>` : ''}
+        <p class="muted center small">Tap a version to hear it — tap again to replay.</p>`;
       const ol = optionList(body, idxs, (i) => `🔊 Version ${'ABC'[idxs.indexOf(i)]}`, (k) => { Voice.speakForced(ex.word, idxs[k]); api.ready(true); });
-      const resolve = ok => { ol.mark(idxs.indexOf(a.stress)); return { ok, html: `${ok ? '' : stressWhy(a, ol.get() >= 0 ? idxs[ol.get()] : -1)}<div class="fw">${wordHTML(ex.word)} [${esc(L.respell(ex.word))}]</div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, words: id ? [id] : [] }; };
-      setTimeout(() => Voice.speakForced(ex.word, idxs[0]), 300);
+      const resolve = ok => { ol.mark(idxs.indexOf(a.stress)); return { ok, html: `${ok ? '' : stressWhy(a, ol.get() >= 0 ? idxs[ol.get()] : -1)}<div class="fw">${wordHTML(ex.word)} [${esc(L.respell(ex.word))}]</div><div class="exp">🎯 ${L.explain(ex.word)}</div>`, say: ok ? undefined : ex.word, words: id ? [id] : [] }; };
       return { check: () => resolve(idxs[ol.get()] === a.stress), reveal: () => resolve(false) };
     },
     macron(ex, body, api) {
       const t = WORDS[ex.target], opts = shuffle(ex.pair);
       body.innerHTML = `<div class="ttl">Careful — length changes the meaning!</div><div class="prompt">${t.img} “${esc(t.en)}”</div>`;
-      const ol = optionList(body, opts, id => `<span class="bigla">${esc(WORDS[id].la)}</span>`, () => api.ready(true));
+      const ol = optionList(body, opts, id => `<span class="bigla">${esc(WORDS[id].la)}</span>`, (i, id) => { Voice.speak(WORDS[id].la); api.ready(true); });
       const resolve = ok => { ol.mark(opts.indexOf(ex.target)); return { ok, html: ex.pair.map(wordFeedback).join(''), say: t.la, words: [ex.target] }; };
       return { check: () => resolve(opts[ol.get()] === ex.target), reveal: () => resolve(false) };
     },
@@ -906,9 +1038,13 @@
   function allTokens() {
     if (!_allEn) {
       const sents = ALL_LESSONS.flatMap(x => x.l.sentences || []);
+      const texts = [...sents, ...ALL_LESSONS.flatMap(x => (x.l.drills || []).map(d => ({ la: d.la.replace(/[{}]/g, ''), en: d.en }))),
+        ...ALL_LESSONS.flatMap(x => x.l.story ? x.l.story.lines : [])];
       PROPER = new Set(['i']);
       Object.values(WORDS).filter(w => w.proper).forEach(w => PROPER.add(w.la.toLowerCase()));
-      sents.forEach(s => [enTokens(s.en), laTokens(s.la)].forEach(ts => ts.forEach((t, i) => { if (i > 0 && /^[A-ZĀĒĪŌŪ]/.test(t)) PROPER.add(t.toLowerCase()); })));
+      // a capital that is not at the start of a sentence marks a proper noun
+      const scanCaps = (str, tok) => str.split(/[.!?:]/).forEach(part => tok(part).forEach((t, i) => { if (i > 0 && /^[A-ZĀĒĪŌŪ]/.test(t)) PROPER.add(t.toLowerCase()); }));
+      texts.forEach(s => { scanCaps(s.en, enTokens); scanCaps(s.la, laTokens); });
       _allEn = uniq(sents.flatMap(s => enTokens(s.en)).map(tileCase)).filter(t => !['a', 'an', 'the'].includes(t));
       _allLa = uniq([...sents.flatMap(s => laTokens(s.la)), ...Object.values(WORDS).map(w => w.la)].map(tileCase));
     }
@@ -929,7 +1065,7 @@
     const lc = new Set(answer.map(x => x.toLowerCase()));
     const pool = (target === 'en' ? allTokens().en : allTokens().la).filter(t => !lc.has(t.toLowerCase()));
     const tiles = shuffle([...answer, ...shuffle(pool).slice(0, Math.min(4, Math.max(2, 7 - answer.length)))]);
-    if (target === 'en') setTimeout(() => Voice.speak(s.la), 250);
+    if (target === 'en') sayLater(ex, s.la);
     body.innerHTML = `<div class="ttl">${target === 'en' ? 'Translate this sentence' : 'Write this in Latin'}</div>
       <div class="sent">${target === 'en'
         ? `<div class="owl">🦉</div><div class="bubble">${textHTML(s.la)} ${speakBtn(s.la)}${srcBadge(s)}</div>`
@@ -989,6 +1125,7 @@
         <button class="pcard" data-p="weak"><span>🧠</span><b>Weak words</b><small>Your ${Math.min(8, ids.length)} faintest words</small></button>
         <button class="pcard" data-p="stress"><span>🎯</span><b>Stress drill</b><small>12 accent questions</small></button>
         <button class="pcard" data-p="sentences"><span>📜</span><b>Sentences</b><small>From finished lessons</small></button>
+        <button class="pcard" data-p="grammar"><span>🧩</span><b>Grammar</b><small>${doneDrills().length} forms to choose</small></button>
       </div>
       ${quotesHTML()}
       <h2 class="h2">Lexicon <span class="muted">(${ids.length} words)</span></h2>
@@ -1001,6 +1138,7 @@
       if (k === 'weak' && ids.length < 4) return toast('Learn at least 4 words first.');
       if (k === 'review' && !dueIds().length) return toast('Nothing due right now — come back later! ⏰');
       if (k === 'sentences' && !doneSentences().length) return toast('Finish a lesson with sentences first.');
+      if (k === 'grammar' && !doneDrills().length) return toast('Finish a grammar lesson (🧩) first — e.g. "We, you all, they".');
       startLesson(null, k);
     });
   }
@@ -1320,9 +1458,10 @@
   if (boot.status === 'corrupt') DEVICE = S.rotateDeviceId();
   if (!S.storageWritable()) showSaveFailed();
   if (boot.status === 'corrupt') modal(`<h3>⚠️ Save could not be read</h3><p>${esc(boot.error)}</p><p>Starting fresh. If you have a progress file, load it in Profile → Save & Sync.</p>`);
-  if (boot.status === 'new') setTimeout(() => modal(`<div class="center"><div class="trophy">🦉</div><h2>Salvē!</h2><p>Welcome to <b>Latinum</b> — learn Latin the way Cicero spoke it.</p><p class="muted">Start with <b>Prōnūntiātiō</b>: four short lessons on sounds and the stress rule. Everything else builds on them.</p></div>`, [{ label: 'Incipiāmus! (Let\'s begin)', primary: true }]), 300);
+  if (boot.status === 'new') setTimeout(() => modal(`<div class="center"><div class="trophy">🦉</div><h2>Salvē!</h2><p>Welcome to <b>Latinum</b> — learn Latin the way Cicero spoke it.</p><p class="muted">The course has six parts: sounds → first words → actions → the world → Roman life → real classical texts. Each unit gives you words, grammar, a story or a quote, and a 🏆 review. Start with <b>Prōnūntiātiō</b>.</p></div>`, [{ label: 'Incipiāmus! (Let\'s begin)', primary: true }]), 300);
   checkAchievements();
 
   // exposed for debugging / tests in the browser console
-  window.__latinum = { get save() { return save; }, buildLesson, startLesson, runCustom: items => startLesson(null, 'custom', items) };
+  window.__latinum = { get save() { return save; }, buildLesson, startLesson, runCustom: items => startLesson(null, 'custom', items),
+    finishNow: () => { if (Run.active) { Run.queue = []; Run.done = Math.max(Run.done, 1); nextEx(); } } };
 })();

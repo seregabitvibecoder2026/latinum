@@ -11,7 +11,7 @@
 | `index.html` | Shell. Loads scripts in order: latin → save → course → app | low |
 | `js/latin.js` | Phonology: syllables, **stress**, respelling, TTS strings. Pure functions | medium |
 | `js/save.js` | **Save system.** localStorage, file/code import/export, merge, migrations | **HIGH** |
-| `js/course.js` | All content: `WORDS`, `UNITS` → lessons, `GLOSS` | medium (IDs!) |
+| `js/course.js` | All content: `WORDS`, `GLOSS`, `UNITS` → lessons, `PARTS`, `REVIEW_IDS`. See "Adding lessons — the cheap way" | medium (IDs!) |
 | `js/app.js` | UI, exercises, XP, achievements | medium |
 | `css/style.css` | Styles, light/dark tokens | low |
 | `tests/run-tests.js` | Test suite (no deps). **Run after every change** | — |
@@ -73,6 +73,46 @@ explicitly asks and understands the consequence).
 9. Never auto-delete or reset progress. Reset happens only through the explicit
    "Reset all progress" button (which keeps a backup copy).
 
+## ⚡ Adding lessons — the cheap way (read this, NOT the whole project)
+
+Content work never needs `app.js`, `save.js`, `latin.js` or `css/`. Don't open them.
+`course.js` is large — **don't read it whole**. Do this instead:
+
+1. See the course map (≈1 line per unit):
+   ```
+   node -e "const C=require('./js/course.js');C.UNITS.forEach(u=>console.log(u.part,u.id,u.title,'|',u.lessons.map(l=>l.id).join(' ')))"
+   ```
+2. Check whether a word already exists: `grep -n "^    <id>:" js/course.js` (or search by Latin form).
+3. Read ONE existing lesson of the same kind as a template, by line range
+   (`grep -n "id: 'l_food_3'" js/course.js`, then read ~40 lines). Kinds:
+   - **words lesson** — `words`, `sentences`, `tip`
+   - **🧩 grammar lesson** — plus `drills: [{ la: 'Nōs {cantāmus}.', opts: ['cantat'], en, why }]`
+     (`{…}` = the gap/answer, `opts` = wrong options only)
+   - **📖 story lesson** — plus `story: { title, lines: [{la, en}], qs: [{ q, a, opts, line }] }`
+   - **📜 quote** — a sentence with `src` (real attribution; "after …" if adapted)
+4. Write the lesson. Lesson fields: `id, title, icon, gram` (one-line grammar focus), `words`, …
+   New unit: `{ id, title, sub, icon, color, part, gram, lessons }` — insert it in `UNITS` in the
+   right **part** (units must stay ordered by part, see `PARTS`), and add its review id to
+   `REVIEW_IDS` (the 🏆 unit review lesson is generated automatically from the unit's lessons).
+5. New words go at the end of `WORDS` (`// ===== added …` block); inflected forms used in
+   sentences/drills/stories go into `GLOSS`.
+6. Append every new id (words, lessons incl. the review, units) to `tests/frozen-ids.json`:
+   ```
+   node -e "const C=require('./js/course.js'),fs=require('fs'),f=JSON.parse(fs.readFileSync('tests/frozen-ids.json'));const a=(k,v)=>v.forEach(i=>f[k].includes(i)||f[k].push(i));a('lessons',C.UNITS.flatMap(u=>u.lessons.map(l=>l.id)));a('units',C.UNITS.map(u=>u.id));a('words',Object.keys(C.WORDS));fs.writeFileSync('tests/frozen-ids.json',JSON.stringify(f,null,1))"
+   ```
+7. `node tests/run-tests.js` — it tells you exactly what is missing (glosses, broken drills,
+   bad stories, review ids). For tricky stress, add the word to `STRESS` in the test file.
+
+### Curriculum concept ("Via Latina")
+Six parts: I sounds → II first words (est) → III actions (verbs, accusative) → IV the world
+(prepositions, adjectives, plurals) → V Roman life (conjugations, genitive, questions,
+commands, perfect) → VI original classical texts. Every unit: new words → 🧩 grammar drills →
+📖 story or 📜 quote → 🏆 review. **Classics are introduced gradually**: early units get short,
+simplified quotes ("after Seneca …"), Part V adds real mottos, Part VI uses original lines only.
+Stories may preview grammar of the next unit (tap-to-gloss makes that fine).
+
+Replays give medals (2nd run 🥉, 3rd 🥈, 4th 🥇, from `save.lessons[id].n`) — no save change needed.
+
 ## Content conventions (`course.js`)
 
 - Long vowels with macrons (`ā ē ī ō ū ȳ`). Consonantal u = `v`. Consonantal i stays `i`.
@@ -86,6 +126,10 @@ explicitly asks and understands the consequence).
   ignored automatically when checking answers).
 
 ## Adding an exercise type
+
+Info screens (`teach`, `story`) are listed in `isInfo()`. Exercises that show Latin in an
+option should speak it on tap (the learner hears the word when pressing the block, not after
+checking). Delayed auto-speech must use `sayLater(ex, text)` so it never plays over the next task.
 
 Add a renderer to `EX` in `app.js` returning `{ check(), reveal() }` where each returns
 `{ ok, html, say?, words? }`, and generate it in `buildLesson` / `buildPractice`.
