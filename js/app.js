@@ -9,7 +9,7 @@
   const S = window.SaveSystem, L = window.Latin;
   let DEVICE = S.getDeviceId();
   // Shown in the UI and in bug reports. Bump on every release — AND the ?v= in index.html (cache busting).
-  const APP_VERSION = '0.4.0-beta';
+  const APP_VERSION = '0.4.1-beta';
   const REPO_URL = 'https://github.com/seregabitvibecoder2026/latinum';
   const boot = S.load();
   let save = boot.save;
@@ -1028,7 +1028,11 @@
   const enTokens = s => s.replace(/[.,!?;:“”"]/g, ' ').split(/\s+/).filter(Boolean);
   const laTokens = s => L.tokenize(s).filter(t => t.word).map(t => L.clean(t.w));
   function normEN(s) {
-    return s.toLowerCase().replace(/[’`]/g, "'").replace(/\bdon't\b/g, 'do not').replace(/n't\b/g, ' not').replace(/\bi'm\b/g, 'i am')
+    // expand contractions so "we're" = "we are", "can't" = "cannot" = "can not"; possessive 's is kept
+    return s.toLowerCase().replace(/[’`]/g, "'").replace(/\bcan't\b/g, 'can not').replace(/\bcannot\b/g, 'can not')
+      .replace(/\bwon't\b/g, 'will not').replace(/\bdon't\b/g, 'do not').replace(/n't\b/g, ' not').replace(/\bi'm\b/g, 'i am')
+      .replace(/'re\b/g, ' are').replace(/'ll\b/g, ' will').replace(/'ve\b/g, ' have')
+      .replace(/\b(it|that|there|here|who|what|where|he|she)'s\b/g, '$1 is')
       .replace(/\bo\b/g, 'oh').replace(/favour/g, 'favor').replace(/[^a-z' ]+/g, ' ').split(/\s+/)
       .filter(t => t && !['a', 'an', 'the'].includes(t)).join(' ');
   }

@@ -202,7 +202,7 @@
     // --- adjectives ---
     pulcher: { nopic: true, la: 'pulcher', en: 'beautiful', img: '🌺', info: 'pulcher, pulchra, pulchrum — ch = aspirated k', alt: ['pretty', 'handsome'] },
     fessus: { nopic: true, la: 'fessus', en: 'tired', img: '🥱', info: 'fessus, fessa, fessum', alt: ['weary'] },
-    multus: { nopic: true, la: 'multus', en: 'much', img: '🔢', info: 'multus, -a, -um — plural multī = many', alt: ['many'] },
+    multus: { nopic: true, la: 'multus', en: 'many', img: '🔢', info: 'multus, -a, -um — much; plural multī = many', alt: ['much'] },
     brevis: { nopic: true, la: 'brevis', en: 'short', img: '🤏', info: 'brevis, breve', alt: ['brief'] },
     ars: { nopic: true, la: 'ars', en: 'art', img: '🎨', info: 'ars, artis (f.) — art, skill, craft', alt: ['skill', 'craft'] },
     // --- to be ---
@@ -222,7 +222,7 @@
     discipulus: { grp: 'people', la: 'discipulus', en: 'pupil', img: '🧑‍🎓', info: 'discipulus, discipulī (m.)', alt: ['student'] },
     lego: { la: 'legō', en: 'I read', img: '👓', info: 'legō, legere — 3rd conjugation: legis, legit' },
     scribo: { la: 'scrībō', en: 'I write', img: '✍️', info: 'scrībō, scrībere — scrībis, scrībit' },
-    dico: { nopic: true, la: 'dīcō', en: 'I say', img: '💬', info: 'dīcō, dīcere — c = k: DEE-koh', alt: ['I speak', 'I tell'] },
+    dico: { nopic: true, la: 'dīcō', en: 'I say', img: '💬', info: 'dīcō, dīcere — c = k: DEE-koh', alt: ['I tell'] },
     disco: { nopic: true, la: 'discō', en: 'I learn', img: '🎓', info: 'discō, discere — discis, discit' },
     respondeo: { nopic: true, la: 'respondeō', en: 'I answer', img: '🗨️', info: 'respondeō, respondēre', alt: ['I reply', 'I respond'] },
     subito: { nopic: true, la: 'subitō', en: 'suddenly', img: '⚡' },
@@ -259,7 +259,7 @@
     lupa: { la: 'lupa', en: 'she-wolf', img: '🐺', info: 'lupa, lupae (f.) — the she-wolf who nursed Romulus and Remus' },
     gemini: { la: 'geminī', en: 'twins', img: '👶', info: 'geminus, -a, -um — plural geminī = twins' },
     aedifico: { la: 'aedificō', en: 'I build', img: '🏗️', info: 'aedificō, aedificāre' },
-    servo: { nopic: true, la: 'servō', en: 'I save', img: '🛟', info: 'servō, servāre — cf. servus (slave)', alt: ['I rescue', 'I keep'] },
+    servo: { nopic: true, la: 'servō', en: 'I save', img: '🛟', info: 'servō, servāre', alt: ['I rescue', 'I keep'] },
     olim: { nopic: true, la: 'ōlim', en: 'once upon a time', img: '📜', alt: ['once', 'long ago'] },
     // --- classics III ---
     vita: { nopic: true, la: 'vīta', en: 'life', img: '🧬', info: 'vīta, vītae (f.)' },
@@ -268,7 +268,7 @@
     labor: { nopic: true, la: 'labor', en: 'toil', img: '⚒️', info: 'labor, labōris (m.)', alt: ['work', 'labour', 'labor'] },
     sententia: { nopic: true, la: 'sententia', en: 'opinion', img: '💭', info: 'sententia, sententiae (f.) — also "saying, motto"', alt: ['saying', 'view'] },
     fabula: { nopic: true, la: 'fābula', en: 'story', img: '📚', info: 'fābula, fābulae (f.)', alt: ['tale', 'fable', 'play'] },
-    certus: { nopic: true, la: 'certus', en: 'reliable', img: '🎯', info: 'certus, -a, -um', alt: ['sure', 'certain', 'true'] },
+    certus: { nopic: true, la: 'certus', en: 'sure', img: '🎯', info: 'certus, -a, -um', alt: ['reliable', 'certain', 'true'] },
 
     // ===== added in v0.4 (Parts IV–VI completed) =====
     digitus: { la: 'digitus', en: 'finger', img: '☝️', info: 'digitus, digitī (m.)' },
@@ -354,7 +354,7 @@
     'timet': 'fears', 'timent': 'they fear', 'timēmus': 'we fear', 'timuit': 'feared',
     'sedet': 'sits', 'sedent': 'they sit', 'rīdet': 'laughs, smiles', 'rīdent': 'they laugh', 'rīdēs': 'you laugh',
     'docet': 'teaches', 'docēs': 'you teach', 'docendō': 'by teaching', 'respondet': 'answers',
-    'legit': 'reads', 'legat': 'may read (not "reads"!)', 'legunt': 'they read', 'legimus': 'we read',
+    'legit': 'reads', 'legat': '(subjunctive) may read — not "reads"', 'legunt': 'they read', 'legimus': 'we read',
     'scrībit': 'writes', 'scrībunt': 'they write', 'scrībimus': 'we write',
     'dīcit': 'says', 'dīcis': 'you say', 'discit': 'learns', 'discis': 'you learn', 'discimus': 'we learn',
     'audit': 'hears', 'audiunt': 'they listen', 'audī': 'listen!', 'audīte': 'listen! (pl.)',
@@ -369,13 +369,13 @@
     'aedificāvit': 'built', 'invēnit': 'found', 'cūrāvit': 'looked after', 'vīcit': 'conquered', 'vīcērunt': 'they conquered',
     'erat': 'was', 'erant': 'they were', 'agitat': 'moves, stirs', 'cernitur': 'is seen, is recognised', 'iuvat': 'helps',
     // nouns & adjectives
-    'nautae': 'sailors / of the sailor', 'cēnam': 'dinner (object)', 'cēnae': 'of dinner', 'lupum': 'wolf (object)',
-    'lupī': 'wolves / of the wolf', 'puellam': 'girl (object)', 'puellā': 'girl (with…)', 'puerum': 'boy (object)',
+    'nautae': 'sailors (later also: of the sailor)', 'cēnam': 'dinner (object)', 'cēnae': 'of dinner', 'lupum': 'wolf (object)',
+    'lupī': 'wolves (later also: of the wolf)', 'puellam': 'girl (object)', 'puellā': 'with the girl (ablative)', 'puerum': 'boy (object)',
     'apēs': 'bees', 'ursum': 'bear (object)', 'silvam': 'forest (object / to…)', 'īnsulam': 'island (to…)', 'īnsulā': 'island (on…)',
-    'mātre': 'mother (with…)', 'aquā': 'water (in / out of…)', 'pulchra': 'beautiful (f.)', 'pulchrum': 'beautiful (n.)',
+    'mātre': 'with mother (ablative)', 'aquā': 'water (in / out of…)', 'pulchra': 'beautiful (f.)', 'pulchrum': 'beautiful (n.)',
     'multae': 'many (f.)', 'multī': 'many', 'laetum': 'happy (n.)', 'laetī': 'happy (pl.)', 'bonum': 'good (n.)', 'rubrum': 'red (n.)',
     'rubram': 'red (f. object)', 'novum': 'new (n.)', 'novam': 'new (f. object)', 'mala': 'bad (f.)', 'parvī': 'little (pl.)',
-    'amīcī': 'friends / of the friend', 'amīce': 'friend! (calling)', 'amīcum': 'friend (object)', 'quot': 'how many / as many',
+    'amīcī': 'friends (later also: of the friend)', 'amīce': 'friend! (calling)', 'amīcum': 'friend (object)', 'quot': 'how many / as many',
     'hominēs': 'people', 'tot': 'so many', 'sententiae': 'opinions', 'sententiam': 'opinion (object)', 'equum': 'horse (object)',
     'rōmānī': 'Romans', 'canem': 'dog (object)', 'forō': 'forum (in…)', 'rosās': 'roses (object)',
     'stellās': 'stars (object)', 'librum': 'book (object)', 'epistulam': 'letter (object)', 'scholā': 'school (in…)',
@@ -386,12 +386,12 @@
     'repetītiō': 'repetition', 'studiōrum': 'of studies, of learning', 'servī': 'slaves / of the slave', 'servum': 'slave (object)',
     'culīnā': 'kitchen (in…)', 'culīnam': 'kitchen (object)', 'culīnae': 'of the kitchen', 'mēnsam': 'table (to…)',
     'mēnsā': 'table (on…)', 'mēnsae': 'of the table', 'coquī': 'of the cook', 'coquum': 'cook (object)', 'vīllā': 'villa (in…)',
-    'esne': 'are you…?', 'estne': 'is it…?', 'cui': 'to whom', 'bonō': 'for a benefit', 'hortō': 'garden (in…)',
+    'esne': 'are you…?', 'estne': 'is it…?', 'cui': 'to whom', 'bonō': '(for) good — Cui bonō? = who benefits?', 'hortō': 'garden (in…)',
     'cubiculō': 'bedroom (in…)', 'sonum': 'a sound (object)', 'arbore': 'tree (in…)', 'fīlī': 'son! (calling)',
     'tē': 'you (object)', 'ipsum': 'yourself, itself', 'sī': 'if', 'pācem': 'peace (object)',
     'geminōs': 'twins (object)', 'rōmulus': 'Romulus (founder of Rome)', 'remus': 'Remus (his twin)', 'urbem': 'city (object)',
-    'posteā': 'afterwards, later', 'pāstor': 'shepherd', 'tandem': 'at last', 'rōmam': 'Rome (object)',
-    'sine': 'without (+abl.)', 'litterīs': 'letters, books (without…)', 'improbus': 'relentless, wicked',
+    'posteā': 'afterwards, later', 'pāstor': 'shepherd', 'tandem': 'at last', 'rōmam': 'Rome (object / to Rome)',
+    'sine': 'without (+abl.)', 'litterīs': 'books, literature (ablative)', 'improbus': 'relentless, wicked',
     'mōlem': 'mass, bulk (object)', 'nūlla': 'no, not any (f.)', 'līneā': 'line (without…)', 'mortem': 'death (object)',
     'mortis': 'of death', 'rē': 'matter, situation', 'incertā': 'uncertain', 'fābulā': 'story (in…)', 'fābulam': 'story (object)',
     'vae': 'woe!', 'victīs': 'to the conquered', 'certa': 'sure (f.)', 'certum': 'sure (n.)',
@@ -403,7 +403,7 @@
     'templī': 'of the temple', 'aedificant': 'they build', 'spectant': 'they watch', 'puerōs': 'boys (object)',
     // 4th conjugation, infinitives
     'aperit': 'opens', 'aperiunt': 'they open', 'aperīs': 'you open', 'aperī': 'open!', 'nihil': 'nothing',
-    'invenit': 'finds (present!)', 'inveniunt': 'they find', 'audīmus': 'we hear', 'sentīmus': 'we feel', 'sentit': 'feels',
+    'invenit': 'finds (short e; invēnit = found)', 'inveniunt': 'they find', 'audīmus': 'we hear', 'sentīmus': 'we feel', 'sentit': 'feels',
     'sentiunt': 'they feel', 'scīs': 'you know', 'scit': 'knows', 'magistrum': 'teacher (object)',
     'natāre': 'to swim', 'legere': 'to read', 'scrībere': 'to write', 'labōrāre': 'to work', 'cantāre': 'to sing',
     'possumus': 'we can', 'potest': 'can, is able', 'possunt': 'they can', 'potestis': 'you (all) can',
@@ -411,8 +411,8 @@
     // dative, 3rd declension, pronouns
     'dat': 'gives', 'dā': 'give!', 'narrat': 'tells', 'fīliō': 'to the son', 'fīlium': 'son (object)',
     'discipulīs': 'to the pupils', 'discipulōs': 'pupils (object)', 'mīlitī': 'to the soldier', 'mīlitem': 'soldier (object)',
-    'puerō': 'to the boy', 'rosae': 'to / of the rose; roses', 'rosā': 'rose (with…)', 'bis': 'twice', 'quī': 'who, he who',
-    'citō': 'quickly', 'rēgem': 'king (object)', 'rēgis': 'of the king', 'rēgī': 'to the king', 'uxōre': 'wife (with…)',
+    'puerō': 'to the boy', 'rosae': 'to / of the rose; roses', 'rosā': 'rose (ablative: by / with / in)', 'bis': 'twice', 'quī': 'who, he who',
+    'citō': 'quickly', 'rēgem': 'king (object)', 'rēgis': 'of the king', 'rēgī': 'to the king', 'uxōre': 'with (his) wife (ablative)',
     'uxōrem': 'wife (object)', 'senem': 'old man (object)', 'senī': 'to the old man', 'pārent': 'they obey (+dat.)',
     'ōmen': 'omen, sign', 'amāsne': 'do you love?', 'nōbīs': 'to / for us',
     // story: cave canem
@@ -431,7 +431,7 @@
     'oppidō': 'town (in…)', 'prope': 'near (+acc.)', 'vesuvium': 'Vesuvius (the volcano)', 'mercātōrēs': 'merchants',
     'labōrābant': 'were working', 'viīs': 'streets (in…)', 'lūdēbant': 'were playing', 'fūmum': 'smoke (object)',
     'ignem': 'fire (object)', 'ēmīsit': 'sent out', 'clāmābant': 'were shouting', 'fugiēbant': 'were fleeing',
-    'cinis': 'ash', 'tēxit': 'covered', 'diū': 'for a long time', 'dormīvit': 'slept', 'vīsitant': 'they visit',
+    'cinis': 'ash', 'tēxit': 'covered', 'diū': 'for a long time', 'dormīvit': 'slept', 'vīsunt': 'they go to see, they visit', 'multōs': 'many (m. object)', 'fēlem': 'cat (object)', 'ante': 'in front of (+acc.)', 'aquae': 'of water; waters', 'legis': 'you read', 'vōbīs': 'to / for you (pl.)', 'dē': 'about, of (+abl.)', 'hominibus': 'people (about…)', 'miserīs': 'unhappy, poor (abl. pl.)', 'cōgitant': 'they think',
     // Phaedrus 4.3
     'famē': 'by hunger', 'coācta': 'driven, forced (f.)', 'altā': 'high (f., in…)', 'vīneā': 'vineyard (in…)',
     'appetēbat': 'was reaching for', 'summīs': 'utmost, highest', 'saliēns': 'leaping', 'vīribus': 'strength (with…)',
@@ -614,7 +614,7 @@
               { la: 'Canis nōn est lupus, sed amīcus.', en: 'The dog is not a wolf, but a friend.' }
             ],
             qs: [
-              { q: 'Who is Julia?', a: "Marcus's sister", opts: ["Marcus's mother", 'a teacher'], line: 1 },
+              { q: 'Who is Julia?', a: 'a sister', opts: ['a mother', 'a teacher'], line: 1 },
               { q: 'What do they think they see?', a: 'a wolf', opts: ['a lion', 'a cat'], line: 3 },
               { q: 'What is it really?', a: 'the dog', opts: ['a wolf', 'a horse'], line: 4 }
             ]
@@ -718,10 +718,10 @@
             { la: 'Lupum puer spectat.', en: 'The boy watches the wolf.', alt: ['The boy is watching the wolf.', 'The boy looks at the wolf.'], note: 'The <b>-um</b> ending marks <i>lupum</i> as the object — even though it comes first.' }
           ],
           drills: [
-            { la: 'Puella {rosam} amat.', opts: ['rosa'], en: 'The girl loves the rose.', why: 'the rose is loved → object → <b>-m</b>' },
-            { la: '{Puella} rosam amat.', opts: ['puellam'], en: 'The girl loves the rose.', why: 'the girl does the loving → subject → no -m' },
+            { la: 'Puella {rosam} amat.', opts: ['rosa', 'rosae'], en: 'The girl loves the rose.', why: 'the rose is loved → object → <b>-m</b>' },
+            { la: '{Puella} rosam amat.', opts: ['puellam', 'puellae'], en: 'The girl loves the rose.', why: 'the girl does the loving → subject → no -m' },
             { la: 'Fēlēs {piscem} amat.', opts: ['piscis'], en: 'The cat loves fish.', why: '<i>piscis → piscem</i>: object' },
-            { la: 'Puer {aquam} portat.', opts: ['aqua'], en: 'The boy carries water.', why: 'what is carried → object → <b>-m</b>' },
+            { la: 'Puer {aquam} portat.', opts: ['aqua', 'aquae'], en: 'The boy carries water.', why: 'what is carried → object → <b>-m</b>' },
             { la: '{Lupus} puerum spectat.', opts: ['lupum'], en: 'The wolf watches the boy.', why: 'the wolf does the watching → subject' },
             { la: 'Lupum {puer} spectat.', opts: ['puerum'], en: 'The boy watches the wolf.', why: 'word order is free — <i>lupum</i> is the object, so <i>puer</i> must be the subject' },
             { la: 'Māter {cēnam} parat.', opts: ['cēna'], en: 'Mother prepares dinner.', why: 'what is prepared → object' }
@@ -750,12 +750,12 @@
               { la: 'Ursus clāmat et fugit. Apēs rīdent.', en: 'The bear shouts and runs away. The bees laugh.' }
             ],
             qs: [
-              { q: 'What does the bear look for?', a: 'honey', opts: ['fish', 'milk'], line: 1 },
+              { q: 'What does the bear do with the honey?', a: 'he snatches it', opts: ['he shares it', 'he hides it'], line: 3 },
               { q: 'Who has the honey?', a: 'the bees', opts: ['the bear', 'a boy'], line: 2 },
               { q: 'Why does the bear shout?', a: 'the bees sting him', opts: ['he finds honey', 'he sees a wolf'], line: 4 }
             ]
           },
-          tip: `<h3>📖 Spot the endings</h3><p>While you read, look at the ends of words: <i>ursus</i> (subject) vs <i>urs<b>um</b></i> (object); <i>habe<b>t</b></i> (one) vs <i>habe<b>nt</b></i> (several).</p>`
+          tip: `<h3>📖 Spot the endings</h3><p>While you read, look at the ends of words: <i>ursus</i> (subject) vs <i>urs<b>um</b></i> (object); <i>rapi<b>t</b></i> (one) vs <i>pungu<b>nt</b></i> (several).</p><p>Don't worry about the exact verb endings (<i>quaerit, rapit, pungunt</i>) — they get their own lessons later.</p>`
         }
       ]
     },
@@ -845,7 +845,7 @@
             { la: 'Nauta fessus est.', en: 'The sailor is tired.', alt: ['The sailor is weary.'] },
             { la: 'Templum pulchrum est.', en: 'The temple is beautiful.' },
             { la: 'Multae stellae in caelō sunt.', en: 'There are many stars in the sky.', alt: ['Many stars are in the sky.'] },
-            { la: 'Ars longa, vīta brevis.', en: 'Art is long, life is short.', alt: ['Art is long, life short.', 'Skill takes long, life is short.'], src: 'Latin rendering of Hippocrates, Aphorisms 1.1; cf. Seneca, Dē Brevitāte Vītae 1.1', note: '<i>est</i> is left out — very common in mottos. <i>vīta</i> is feminine, so <i>brevis</i> (an adjective with the same form for m. and f.).' }
+            { la: 'Ars longa, vīta brevis.', en: 'Art is long, life is short.', alt: ['Art is long, life short.'], src: 'Latin rendering of Hippocrates, Aphorisms 1.1; cf. Seneca, Dē Brevitāte Vītae 1.1', note: '<i>est</i> is left out — very common in mottos. <i>vīta</i> is feminine; <i>brevis</i> is one of the adjectives that look the same for m. and f.' }
           ],
           drills: [
             { la: 'Puella {laeta} est.', opts: ['laetus', 'laetum'], en: 'The girl is happy.', why: '<i>puella</i> is feminine → <b>-a</b>' },
@@ -853,7 +853,7 @@
             { la: 'Nauta {bonus} est.', opts: ['bona', 'bonum'], en: 'The sailor is good.', why: '<i>nauta</i> ends in -a but is masculine → <b>-us</b>' },
             { la: 'Rosa {rubra} est.', opts: ['ruber', 'rubrum'], en: 'The rose is red.', why: 'feminine of <i>ruber</i> is <i>rubra</i>' },
             { la: 'Domus {nova} est.', opts: ['novus', 'novum'], en: 'The house is new.', why: '<i>domus</i> is feminine (despite -us) → <b>-a</b>' },
-            { la: 'Rēgīna {pulchra} est.', opts: ['pulcher', 'pulchrum'], en: 'The queen is beautiful.', why: 'feminine → <i>pulchra</i>' },
+            { la: 'Mēnsa {pulchra} est.', opts: ['pulcher', 'pulchrum'], en: 'The table is beautiful.', why: '<i>mēnsa</i> is feminine → <i>pulchra</i>' },
             { la: 'Bellum {malum} est.', opts: ['malus', 'mala'], en: 'War is bad.', why: '<i>bellum</i> is neuter → <b>-um</b>' }
           ],
           tip: `<h3>Adjectives copy their noun</h3>
@@ -861,7 +861,7 @@
 <tr><td>feminine</td><td>puella laet<b>a</b> · domus nov<b>a</b></td></tr>
 <tr><td>neuter</td><td>templum magn<b>um</b> · bellum mal<b>um</b></td></tr></table>
 <p>Copy the <b>gender</b>, not the letters: <i>nauta</i> looks feminine but is a man. Some adjectives (<i>trīstis, brevis, dulcis</i>) have one form for m. and f.</p>
-<p>📜 <i>Ars longa, vīta brevis</i> — a Greek doctor's saying that Romans loved to quote.</p>`
+<p>📜 <i>Ars longa, vīta brevis</i> — a Greek doctor's saying that Romans loved to quote.</p><p>Preview: <i>sunt</i> = they are (full table in the next unit).</p>`
         }
       ]
     },
@@ -951,9 +951,9 @@
             { la: 'Puer linguam mōnstrat.', en: 'The boy shows his tongue.', alt: ['The boy shows the tongue.', 'The boy sticks out his tongue.'] }
           ],
           drills: [
-            { la: 'Duōs {oculōs} habeō.', opts: ['oculī', 'oculus'], en: 'I have two eyes.', why: '-us words: plural object → <b>-ōs</b>' },
-            { la: 'Duās {puellās} videō.', opts: ['puellae', 'puellam'], en: 'I see two girls.', why: '-a words: plural object → <b>-ās</b>' },
-            { la: 'Fēlēs {mūrēs} capit.', opts: ['mūs', 'mūrem'], en: 'The cat catches mice.', why: '3rd declension: plural object → <b>-ēs</b>' },
+            { la: 'Multōs {puerōs} videō.', opts: ['puerī', 'puer'], en: 'I see many boys.', why: '-us / -er words: plural object → <b>-ōs</b>' },
+            { la: 'Rōmānī {puellās} spectant.', opts: ['puellae', 'puellam'], en: 'The Romans watch the girls.', why: '-a words: plural object → <b>-ās</b>' },
+            { la: 'Fēlēs multōs {mūrēs} capit.', opts: ['mūs', 'mūrem'], en: 'The cat catches many mice.', why: '3rd declension: plural object → <b>-ēs</b> (<i>multōs</i> shows it is plural)' },
             { la: 'Canis quattuor {pedēs} habet.', opts: ['pēs', 'pedem'], en: 'The dog has four feet.', why: 'plural object of <i>pēs</i> → <i>pedēs</i>' },
             { la: 'Rōmānī {templa} aedificant.', opts: ['templum', 'templī'], en: 'The Romans build temples.', why: 'neuter plural → <b>-a</b> (subject and object alike)' },
             { la: '{Puerī} puellās spectant.', opts: ['puerōs', 'puer'], en: 'The boys watch the girls.', why: 'the boys do the watching → subject plural <b>-ī</b>' }
@@ -964,7 +964,7 @@
 <tr><td>oculus</td><td>ocul<b>ī</b></td><td>ocul<b>ōs</b></td></tr>
 <tr><td>pēs (ped-)</td><td>ped<b>ēs</b></td><td>ped<b>ēs</b></td></tr>
 <tr><td>templum</td><td>templ<b>a</b></td><td>templ<b>a</b></td></tr></table>
-<p>The object plural always ends in <b>-s</b> (except neuters) with a <b>long vowel</b>: <i>-ās, -ōs, -ēs</i>.</p>
+<p>The object plural almost always ends in a <b>long vowel + s</b>: <i>-ās, -ōs, -ēs</i> (neuters: <i>-a</i>).</p>
 <p>⚠️ <i>manus</i> is a 4th-declension word: plural <i>manūs</i> (long ū).</p>`
         }
       ]
@@ -998,7 +998,7 @@
           id: 'l_city_3', title: 'Story: In the forum', icon: '🌹', gram: 'Reading: place, objects, adjectives',
           words: ['hodie', 'nunc'],
           sentences: [
-            { la: 'Hodiē pāx est.', en: 'Today there is peace.', alt: ['There is peace today.', 'Today it is peace.'] },
+            { la: 'Hodiē pāx est.', en: 'Today there is peace.', alt: ['There is peace today.'] },
             { la: 'Nunc mīles laetus est.', en: 'Now the soldier is happy.', alt: ['The soldier is happy now.', 'Now the soldier is glad.'] }
           ],
           story: {
@@ -1014,7 +1014,7 @@
             qs: [
               { q: 'Where is the soldier walking?', a: 'in the city', opts: ['in the forest', 'to the sea'], line: 0 },
               { q: 'What does the girl have?', a: 'roses', opts: ['a sword', 'bread'], line: 3 },
-              { q: 'Why does the soldier smile?', a: 'there is peace, not war', opts: ['he has a new sword', 'he sees the king'], line: 5 }
+              { q: 'What does the soldier say at the end?', a: 'now there is peace', opts: ['I want a new sword', 'where is the king?'], line: 5 }
             ]
           },
           tip: `<h3>📖 Everything together</h3><p>This story uses everything from Part IV: <i>in</i> + ablative (<i>in urbe, in forō</i>), objects (<i>gladium, rosam</i>), adjectives that agree (<i>rosam rubram</i>) and plurals (<i>multī hominēs</i>).</p>`
@@ -1026,7 +1026,7 @@
       id: 'u_vita', title: 'Vīta cottīdiāna', sub: 'Daily life', icon: '🏫', color: '#3a7d8c', part: 5, gram: '2nd & 3rd conjugation',
       lessons: [
         {
-          id: 'l_vita_1', title: 'I see, I fear', icon: '👁️', gram: '2nd conjugation: -eō, -ēs, -et',
+          id: 'l_vita_1', title: 'I see, I fear', icon: '👁️', gram: 'Family 2 (2nd conjugation): -eō, -ēs, -et',
           words: ['video', 'timeo', 'sedeo', 'rideo', 'doceo'],
           sentences: [
             { la: 'Puer lupum videt.', en: 'The boy sees the wolf.', alt: ['The boy sees a wolf.', 'A boy sees a wolf.'] },
@@ -1042,7 +1042,7 @@
             { la: 'Tū {rīdēs}.', opts: ['rīdet', 'rīdeō'], en: 'You laugh.', why: 'you → <b>-s</b>' },
             { la: 'Ego {doceō}.', opts: ['docet', 'docēs'], en: 'I teach.', why: 'I → <i>doce-<b>ō</b></i> (the e stays!)' }
           ],
-          tip: `<h3>Verb family 2: the e-verbs</h3>
+          tip: `<h3>Verb family 2: the e-verbs</h3><p>Grammars call verb families <b>conjugations</b>; here we just say "family 1, 2, 3, 4".</p>
 <table class="tbl"><tr><td>videō</td><td>I see</td><td>vidēmus</td><td>we see</td></tr>
 <tr><td>vidēs</td><td>you see</td><td>vidētis</td><td>you (all) see</td></tr>
 <tr><td>videt</td><td>he/she sees</td><td>vident</td><td>they see</td></tr></table>
@@ -1060,7 +1060,7 @@
             { la: 'Nōn scholae sed vītae discimus.', en: 'We learn not for school but for life.', alt: ['We do not learn for school but for life.', 'We learn not for school, but for life.'], src: 'after Seneca, Epistulae 106.12 — who wrote it the other way round, as a complaint', note: '<i>scholae, vītae</i> = dative: "<b>for</b> school", "<b>for</b> life".' }
           ],
           drills: [
-            { la: 'Discipulus {legit}.', opts: ['legat', 'legunt'], en: 'The pupil reads.', why: '3rd conjugation: <i>leg-<b>it</b></i> — an <b>i</b> before the ending' },
+            { la: 'Discipulus {legit}.', opts: ['legis', 'legunt'], en: 'The pupil reads.', why: '3rd conjugation: <i>leg-<b>it</b></i> — an <b>i</b> before the ending' },
             { la: 'Discipulī {legunt}.', opts: ['legit', 'legimus'], en: 'The pupils read.', why: 'they → <i>leg-<b>unt</b></i>, not -int!' },
             { la: 'Nōs {scrībimus}.', opts: ['scrībit', 'scrībunt'], en: 'We write.', why: 'we → <i>scrīb-<b>imus</b></i>' },
             { la: 'Tū {dīcis}.', opts: ['dīcit', 'dīcō'], en: 'You say.', why: 'you → <i>dīc-<b>is</b></i>' },
@@ -1081,7 +1081,7 @@
             { la: 'Puella fenestram aperit.', en: 'The girl opens the window.', alt: ['The girl is opening the window.'] },
             { la: 'Nihil sciō.', en: 'I know nothing.', alt: ["I don't know anything.", 'I do not know anything.'] },
             { la: 'Canis cibum invenit.', en: 'The dog finds food.', alt: ['The dog finds the food.'], note: '<i>invenit</i> (short e) = finds; <i>invēnit</i> (long ē) = found. Only the vowel length differs!' },
-            { la: 'Audīmus et sentīmus.', en: 'We hear and feel.', alt: ['We hear and we feel.'] },
+            { la: 'Audīmus et sentīmus.', en: 'We hear and we feel.', alt: ['We hear and feel.'] },
             { la: 'Discipulī magistrum audiunt.', en: 'The pupils listen to the teacher.', alt: ['The pupils hear the teacher.', 'The students listen to the teacher.'] }
           ],
           drills: [
@@ -1100,7 +1100,7 @@
 <tr><td>2</td><td>vid<b>ēre</b></td><td>videt</td><td>vident</td></tr>
 <tr><td>3</td><td>leg<b>ere</b></td><td>legit</td><td>legunt</td></tr>
 <tr><td>4</td><td>aud<b>īre</b></td><td>audit</td><td>audiunt</td></tr></table>
-<p>🎯 <i>au-<b>DĪ</b>-mus</i> (long ī) but <i><b>LE</b>-gi-mus</i> (short i).</p>`
+<p>🎯 <i>au-<b>DĪ</b>-mus</i> (long ī) but <i><b>LE</b>-gi-mus</i> (short i).</p><p>⚠️ <i>capiō, cupiō, fugiō, rapiō</i> look like family 4 in the "I" form but belong to family 3: <i>capis, capit, capere</i>.</p>`
         },
         {
           id: 'l_vita_5', title: 'I can, I must', icon: '💪', gram: 'Infinitive -re; possum, dēbeō, cupiō',
@@ -1110,7 +1110,7 @@
             { la: 'Legere et scrībere possumus.', en: 'We can read and write.', alt: ['We are able to read and write.'] },
             { la: 'Labōrāre dēbēs.', en: 'You must work.', alt: ['You ought to work.', 'You have to work.'] },
             { la: 'Puer cantāre cupit.', en: 'The boy wants to sing.', alt: ['The boy wishes to sing.'] },
-            { la: 'Nōn omnia possumus omnēs.', en: 'We cannot all do everything.', alt: ['Not all of us can do everything.', 'We can not all do everything.'], src: 'Vergil, Eclogues 8.63' }
+            { la: 'Nōn omnia possumus omnēs.', en: 'We cannot all do everything.', alt: ['Not all of us can do everything.', "We can't all do everything."], src: 'Vergil, Eclogues 8.63' }
           ],
           drills: [
             { la: 'Natāre {possum}.', opts: ['potest', 'possunt'], en: 'I can swim.', why: 'I → <i>possum</i>' },
@@ -1140,13 +1140,13 @@
               { la: 'Magister librum legit; discipulī audiunt.', en: 'The teacher reads a book; the pupils listen.' },
               { la: 'Subitō Mārcus rīdet.', en: 'Suddenly Marcus laughs.' },
               { la: 'Magister Mārcum videt: “Cūr rīdēs, Mārce?”', en: 'The teacher sees Marcus: “Why are you laughing, Marcus?”' },
-              { la: 'Iūlia respondet: “Fēlēs in fenestrā sedet!”', en: 'Julia answers: “A cat is sitting in the window!”' },
+              { la: 'Iūlia respondet: “Mārcus fēlem in fenestrā videt!”', en: 'Julia answers: “Marcus sees a cat in the window!”' },
               { la: 'Nunc omnēs discipulī rīdent — et magister quoque.', en: 'Now all the pupils laugh — and the teacher too.' }
             ],
             qs: [
               { q: 'Where are Marcus and Julia?', a: 'at school', opts: ['in the forest', 'at dinner'], line: 0 },
-              { q: 'What does the teacher do?', a: 'reads a book', opts: ['sings', 'sleeps'], line: 1 },
-              { q: 'Why does Marcus laugh?', a: 'a cat is sitting in the window', opts: ['the teacher sings', 'Julia is asleep'], line: 4 }
+              { q: 'What does the teacher do?', a: 'reads a book', opts: ['writes a letter', 'sits in the window'], line: 1 },
+              { q: 'Why does Marcus laugh?', a: 'he sees a cat', opts: ['Julia tells a joke', 'the teacher falls'], line: 4 }
             ]
           },
           tip: `<h3>📖 A sneak peek</h3><p>This story already uses things from the next units: a question word (<i>cūr?</i> = why?) and the form used to call someone (<i>Mārce!</i>). Tap them — you'll meet them properly soon.</p>`
@@ -1179,7 +1179,7 @@
 <tr><td>dominus</td><td>→ domin<b>ī</b></td><td>of the master</td></tr>
 <tr><td>puer</td><td>→ puer<b>ī</b></td><td>of the boy</td></tr></table>
 <p>It usually comes <b>after</b> its noun: <i>vīlla dominī</i> = the master's villa.</p>
-<p>⚠️ <i>puellae</i> can also mean "girls" (plural) — context decides. <i>Puellae cantant</i> = the girls sing; <i>rosa puellae</i> = the girl's rose.</p>
+<p>⚠️ <i>puellae</i> can also mean "girls" (plural), and <i>puerī, dominī, amīcī</i> can mean "boys, masters, friends" — context decides. <i>Puellae cantant</i> = the girls sing; <i>rosa puellae</i> = the girl's rose.</p>
 <p>A Roman <i>vīlla</i> was a country estate, worked by enslaved people (<i>servī, ancillae</i>) — a hard fact of Roman life.</p>`
         },
         {
@@ -1214,21 +1214,20 @@
             { la: 'Māter fīliō fābulam narrat.', en: 'Mother tells her son a story.', alt: ['The mother tells her son a story.', 'Mother tells a story to her son.', 'The mother tells the son a story.', 'Mother tells the son a story.'] },
             { la: 'Magister discipulīs librum mōnstrat.', en: 'The teacher shows the pupils a book.', alt: ['The teacher shows a book to the pupils.', 'The teacher shows the pupils the book.', 'The teacher shows the students a book.'] },
             { la: 'Dōnum tibi dō.', en: 'I give you a gift.', alt: ['I give a gift to you.', 'I am giving you a gift.'] },
-            { la: 'Bis dat quī citō dat.', en: 'He gives twice who gives quickly.', alt: ['He who gives quickly gives twice.', 'Who gives quickly gives twice.'], src: 'Latin proverb, after Publilius Syrus' }
+            { la: 'Bis dat quī citō dat.', en: 'He who gives quickly gives twice.', alt: ['He gives twice who gives quickly.', 'Who gives quickly gives twice.'], src: 'Latin proverb, after Publilius Syrus' }
           ],
           drills: [
             { la: 'Puer {puellae} rosam dat.', opts: ['puella', 'puellam'], en: 'The boy gives the girl a rose.', why: '"to the girl" → dative <b>-ae</b>' },
             { la: 'Māter {fīliō} fābulam narrat.', opts: ['fīlius', 'fīlium'], en: 'Mother tells her son a story.', why: '"to the son" → dative <b>-ō</b>' },
             { la: 'Magister {discipulīs} librum mōnstrat.', opts: ['discipulōs', 'discipulī'], en: 'The teacher shows the pupils a book.', why: '"to the pupils" → dative plural <b>-īs</b>' },
-            { la: 'Rēx {mīlitī} gladium dat.', opts: ['mīles', 'mīlitem'], en: 'The king gives the soldier a sword.', why: '3rd declension dative → <b>-ī</b>' },
             { la: 'Puella {rosam} puerō dat.', opts: ['rosae', 'rosā'], en: 'The girl gives the boy a rose.', why: 'the thing given → accusative' }
           ],
           tip: `<h3>The dative: "to / for someone"</h3>
 <table class="tbl"><tr><td>puella</td><td>→ puell<b>ae</b></td><td>to the girl</td><td>puell<b>īs</b></td></tr>
 <tr><td>fīlius</td><td>→ fīli<b>ō</b></td><td>to the son</td><td>fīli<b>īs</b></td></tr>
-<tr><td>mīles</td><td>→ mīlit<b>ī</b></td><td>to the soldier</td><td>mīlit<b>ibus</b></td></tr></table>
+</table>
 <p>It answers "to whom?" with verbs of giving, showing, telling: <i>Puer puellae rosam dat</i>.</p>
-<p>You've met it in quotes: <i>homō homin<b>ī</b></i> (Plautus), <i>Cui bonō?</i> (Cicero), <i>nōn schol<b>ae</b> sed vīt<b>ae</b></i>.</p>
+<p>You've met it in quotes: <i>homō homin<b>ī</b></i> (Plautus), <i>nōn schol<b>ae</b> sed vīt<b>ae</b></i>.</p>
 <p>⚠️ <i>-ae</i> now has three jobs: "of the girl", "to the girl", "girls". Context decides.</p>`
         },
         {
@@ -1245,7 +1244,8 @@
             { la: 'Rēgīna {rēgem} amat.', opts: ['rēx', 'rēgī'], en: 'The queen loves the king.', why: 'object → <b>-em</b> (stem rēg-)' },
             { la: 'Liber {rēgis} magnus est.', opts: ['rēx', 'rēgem'], en: "The king's book is big.", why: '"of the king" → <b>-is</b>' },
             { la: 'Senex cum {uxōre} ambulat.', opts: ['uxor', 'uxōrem'], en: 'The old man walks with his wife.', why: '<i>cum</i> + ablative → <b>-e</b>' },
-            { la: 'Mīlitēs {rēgī} pārent.', opts: ['rēgem', 'rēgis'], en: 'The soldiers obey the king.', why: '"obey" takes the dative → <b>-ī</b>' },
+            { la: 'Mīlitēs {rēgī} pārent.', opts: ['rēgem', 'rēgis'], en: 'The soldiers obey the king.', why: '<i>pārēre</i> = "to be obedient <b>to</b>" → dative <b>-ī</b>' },
+            { la: 'Rēx {mīlitī} gladium dat.', opts: ['mīles', 'mīlitem'], en: 'The king gives the soldier a sword.', why: '"to the soldier" → dative <b>-ī</b>' },
             { la: '{Senex} rīdet.', opts: ['senem', 'senī'], en: 'The old man laughs.', why: 'subject → nominative' }
           ],
           tip: `<h3>The 3rd declension</h3>
@@ -1256,7 +1256,7 @@
 <tr><td>accusative</td><td>rēg<b>em</b></td><td>rēg<b>ēs</b></td></tr>
 <tr><td>ablative</td><td>rēg<b>e</b></td><td>rēg<b>ibus</b></td></tr></table>
 <p>The nominative often hides the real stem — the <b>genitive</b> shows it. That's why dictionaries list both: <i>rēx, rēgis</i> · <i>mīles, mīlitis</i> · <i>nōmen, nōminis</i>.</p>
-<p>Neuters have the same form for subject and object: <i>nōmen</i>, plural <i>nōmina</i>.</p>`
+<p>Neuters have the same form for subject and object: <i>nōmen</i>, plural <i>nōmina</i>.</p><p>⚠️ Some verbs take the <b>dative</b> where English has a direct object: <i>pārēre</i> = "to be obedient to": <i>Mīlitēs rēgī pārent</i>.</p>`
         },
         {
           id: 'l_domus_3', title: 'Story: Dinner party', icon: '🧀', gram: 'Reading: the whole household',
@@ -1276,9 +1276,9 @@
               { la: 'Dominus clāmat, sed fīlius dominī rīdet.', en: "The master shouts, but the master's son laughs." }
             ],
             qs: [
-              { q: 'Where does the cook work?', a: 'in the kitchen', opts: ['in the garden', 'in the forum'], line: 1 },
+              { q: 'Who carries the wine and bread?', a: 'the maid', opts: ['the cook', "the master's son"], line: 2 },
               { q: 'What does the dog take?', a: 'the cheese', opts: ['the wine', 'the bread'], line: 4 },
-              { q: 'Who laughs?', a: "the master's son", opts: ['the master', 'the cook'], line: 5 }
+              { q: 'Who laughs?', a: "the master's son", opts: ['the master', 'the maid'], line: 5 }
             ]
           },
           tip: `<h3>📖 Cases in action</h3><p>Before you read, remember: <b>-ī / -ae</b> after a noun = "of" (<i>canis dominī</i>), <b>-m</b> = object, <b>-ā / -ō</b> after <i>in</i> = place.</p>`
@@ -1303,7 +1303,7 @@
           ],
           drills: [
             { la: '{Quis} est? Mārcus est.', opts: ['Quid', 'Ubi'], en: 'Who is it? It is Marcus.', why: 'a person → <i>quis</i> (who)' },
-            { la: '{Quid} est? Rosa est.', opts: ['Quis', 'Cūr'], en: 'What is it? It is a rose.', why: 'a thing → <i>quid</i> (what)' },
+            { la: '{Quid} vidēs? Lupum videō.', opts: ['Quis', 'Cūr'], en: 'What do you see? I see a wolf.', why: 'a thing → <i>quid</i> (what)' },
             { la: '{Ubi} est canis? In hortō.', opts: ['Quis', 'Cūr'], en: 'Where is the dog? In the garden.', why: 'a place → <i>ubi</i> (where)' },
             { la: '{Cūr} rīdēs? Quia laetus sum.', opts: ['Ubi', 'Quid'], en: 'Why are you laughing? Because I am happy.', why: 'a reason → <i>cūr</i> (why)' },
             { la: 'Cūr clāmās? {Quia} lupum videō!', opts: ['Ubi', 'Sed'], en: 'Why are you shouting? Because I see a wolf!', why: '"because" = <i>quia</i>' }
@@ -1334,8 +1334,8 @@
               { la: 'Iūlia rīdet: “Fūr nōn es, sed fēlēs!”', en: 'Julia laughs: “You are not a thief, but a cat!”' }
             ],
             qs: [
-              { q: 'Where is Julia at the start?', a: 'in her bedroom', opts: ['in the kitchen', 'in the forum'], line: 0 },
-              { q: 'What is Julia afraid of?', a: 'a thief', opts: ['a wolf', 'the teacher'], line: 2 },
+              { q: 'Where is Julia at the start?', a: 'in her bedroom', opts: ['in the garden', 'at the window'], line: 0 },
+              { q: 'Who does Julia think is in the garden?', a: 'a thief', opts: ['Marcus', 'her mother'], line: 2 },
               { q: 'Who is really in the garden?', a: 'a black cat', opts: ['a thief', 'Marcus'], line: 4 }
             ]
           },
@@ -1357,7 +1357,7 @@
             { la: 'Dā {mihi} librum!', opts: ['mē', 'ego'], en: 'Give me the book!', why: '"to me" → <i>mihi</i>' },
             { la: 'Quis {tē} vocat?', opts: ['tū', 'tibi'], en: 'Who is calling you?', why: 'object → <i>tē</i>' },
             { la: 'Dōnum {tibi} dō.', opts: ['tē', 'tū'], en: 'I give you a gift.', why: '"to you" → <i>tibi</i>' },
-            { la: 'Magister {nōs} docet.', opts: ['nōbīs'], en: 'The teacher teaches us.', why: 'object → <i>nōs</i>' }
+            { la: 'Magister {nōs} docet.', opts: ['nōbīs', 'vōbīs'], en: 'The teacher teaches us.', why: 'object → <i>nōs</i>' }
           ],
           tip: `<h3>Personal pronouns</h3>
 <table class="tbl"><tr><td></td><td>I</td><td>you</td><td>we</td><td>you all</td></tr>
@@ -1380,11 +1380,11 @@
             { la: 'Tacē, puer!', en: 'Be quiet, boy!', alt: ['Be silent, boy!', 'Quiet, boy!'] },
             { la: 'Dormī, fīlī!', en: 'Sleep, son!', alt: ['Sleep, my son!'] },
             { la: 'Puerī dormiunt.', en: 'The boys sleep.', alt: ['The boys are sleeping.', 'The boys are asleep.'] },
-            { la: 'Spectāte, amīcī!', en: 'Look, friends!', alt: ['Watch, friends!'] }
+            { la: 'Spectāte, amīcī!', en: 'Watch, friends!', alt: ['Look, friends!'] }
           ],
           drills: [
             { la: '{Venīte}, puerī!', opts: ['Venī', 'Venit'], en: 'Come, boys!', why: 'several people → plural command <b>-te</b>' },
-            { la: '{Audī}, Mārce!', opts: ['Audīte', 'Audit'], en: 'Listen, Marcus!', why: 'one person → the bare stem <i>audī</i>' },
+            { la: '{Audī}, Mārce!', opts: ['Audīte', 'Audit'], en: 'Listen, Marcus!', why: 'one person → the stem on its own: <i>audī</i>' },
             { la: 'Salvē, {Mārce}!', opts: ['Mārcus', 'Mārcum'], en: 'Hello, Marcus!', why: 'calling someone: <i>-us</i> → <b>-e</b> (vocative)' },
             { la: '{Tacēte}, discipulī!', opts: ['Tacē', 'Tacet'], en: 'Be quiet, pupils!', why: 'plural → <b>-te</b>' },
             { la: 'Valē, {amīce}!', opts: ['amīcus', 'amīcum'], en: 'Goodbye, friend!', why: 'vocative of <i>amīcus</i> → <i>amīce</i>' },
@@ -1415,33 +1415,33 @@
             { la: 'Sapere {audē}.', opts: ['audet', 'audeō'], en: 'Dare to be wise.', why: 'command: <i>audē!</i>' }
           ],
           tip: `<h3>📜 Mottos are commands</h3><p>Many famous Latin sayings are imperatives — short, sharp orders: <i>carpe diem, festīnā lentē, sapere audē, cavē canem</i>.</p>
-<p>From here on, the quotes get more real: these are the authors' <b>own words</b>, not simplified.</p>`
+<p>From here on, the quotes get more real: most are the authors' <b>own words</b>; a few (<i>Nōsce tē ipsum</i>, <i>Sī vīs pācem…</i>) are the famous short forms of longer sayings — the source line says so.</p>`
         },
         {
           id: 'l_imper_3', title: 'Story: Beware of the dog!', icon: '🚪', gram: 'Reading: commands in action',
           words: ['ianua', 'intro'],
           sentences: [
             { la: 'Iānuam aperī!', en: 'Open the door!' },
-            { la: 'Intrāte, amīcī!', en: 'Come in, friends!', alt: ['Enter, friends!'] },
+            { la: 'Intrāte, amīcī!', en: 'Come in, friends!', alt: ['Enter, friends!', 'Come in, my friends!'] },
             { la: 'Fuge, Mārce!', en: 'Run, Marcus!', alt: ['Flee, Marcus!', 'Run away, Marcus!'] }
           ],
           story: {
             title: 'Cavē canem!',
             lines: [
               { la: 'Mārcus ad vīllam amīcī venit.', en: "Marcus comes to his friend's villa." },
-              { la: 'In iānuā est pictūra: canis magnus et verba “CAVĒ CANEM”.', en: 'On the door there is a picture: a big dog and the words “BEWARE OF THE DOG”.' },
+              { la: 'Ante iānuam est pictūra: canis magnus et verba “CAVĒ CANEM”.', en: 'In front of the door there is a picture: a big dog and the words “BEWARE OF THE DOG”.' },
               { la: 'Mārcus rīdet: “Pictūra est, nōn canis!”', en: 'Marcus laughs: “It is a picture, not a dog!”' },
               { la: 'Iānuam aperit et intrat.', en: 'He opens the door and goes in.' },
               { la: 'Subitō canis vērus lātrat!', en: 'Suddenly a real dog barks!' },
               { la: 'Amīcus clāmat: “Fuge, Mārce! Cavē canem!”', en: 'His friend shouts: “Run, Marcus! Beware of the dog!”' }
             ],
             qs: [
-              { q: 'What is on the door?', a: 'a picture of a dog', opts: ['a real dog', 'a map of Rome'], line: 1 },
+              { q: 'What is in front of the door?', a: 'a picture of a dog', opts: ['a real dog', 'a sleeping cat'], line: 1 },
               { q: 'What does Marcus think?', a: "it's only a picture", opts: ['the dog is dangerous', 'the house is empty'], line: 2 },
-              { q: 'What does his friend tell him?', a: 'to run', opts: ['to sit down', 'to sing'], line: 5 }
+              { q: 'What does his friend tell him?', a: 'to run', opts: ['to knock again', 'to wait outside'], line: 5 }
             ]
           },
-          tip: `<h3>📖 Pompeii's famous doormat</h3><p>In the House of the Tragic Poet in Pompeii a mosaic dog guards the entrance with the words <i>CAVE CANEM</i>. Spot the commands in the story: <i>fuge!</i> (3rd conj. → -e), <i>cavē!</i> (2nd → -ē).</p>`
+          tip: `<h3>📖 Pompeii's famous doormat</h3><p>In the House of the Tragic Poet in Pompeii a mosaic dog on the floor of the entrance warns visitors with the words <i>CAVE CANEM</i>. Spot the commands in the story: <i>fuge!</i> (family 3 → -e), <i>cavē!</i> (2nd → -ē).</p>`
         }
       ]
     },
@@ -1520,11 +1520,11 @@
             ],
             qs: [
               { q: 'Who feared the twins?', a: 'an evil king', opts: ['the she-wolf', 'the shepherd'], line: 1 },
-              { q: 'Who found the twins at the river?', a: 'a she-wolf', opts: ['a sailor', 'a bear'], line: 3 },
-              { q: 'What did Romulus build?', a: 'a new city — Rome', opts: ['a temple', 'a ship'], line: 5 }
+              { q: 'Who found the twins at the river?', a: 'a she-wolf', opts: ['a shepherd', 'the king'], line: 3 },
+              { q: 'What did Romulus build?', a: 'a city', opts: ['a temple', 'a ship'], line: 5 }
             ]
           },
-          tip: `<h3>📖 How Rome began</h3><p>The historian Livy tells this story at the start of his history of Rome (<i>Ab Urbe Conditā</i> 1.4–7). Traditional date of the founding: <b>753 BC</b>.</p><p>Spot the perfects: <i>timu<b>it</b>, portāv<b>it</b>, invēn<b>it</b>, servāv<b>it</b></i>. (<i>erant</i> = "they were".)</p>`
+          tip: `<h3>📖 How Rome began</h3><p>The historian Livy tells this story at the start of his history of Rome (<i>Ab Urbe Conditā</i> 1.4–7). Traditional date of the founding: <b>753 BC</b>.</p><p>Spot the perfects: <i>timu<b>it</b>, portāv<b>it</b>, invēn<b>it</b>, servāv<b>it</b></i>. (<i>erat</i> = "was", <i>erant</i> = "were" — more in the unit <i>Tempora</i>.)</p>`
         }
       ]
     },
@@ -1535,14 +1535,14 @@
           id: 'l_temp_1', title: 'Was doing, used to do', icon: '🕯️', gram: 'Imperfect: -bam, -bās, -bat; eram',
           words: ['saepe', 'tum'],
           sentences: [
-            { la: 'Ōlim in vīllā habitābam.', en: 'Once I used to live in a villa.', alt: ['Once I lived in a villa.', 'Once upon a time I lived in a villa.', 'Long ago I lived in a villa.'] },
+            { la: 'Ōlim in vīllā habitābam.', en: 'I used to live in a villa once.', alt: ['Once I used to live in a villa.', 'I once lived in a villa.', 'Once I lived in a villa.', 'Once upon a time I lived in a villa.', 'Long ago I lived in a villa.'] },
             { la: 'Puerī saepe in silvā ambulābant.', en: 'The boys often walked in the forest.', alt: ['The boys often used to walk in the forest.', 'The boys were often walking in the forest.'] },
             { la: 'Tum Rōma parva erat.', en: 'Then Rome was small.', alt: ['At that time Rome was small.', 'Rome was small then.'] },
             { la: 'Cūr rīdēbās?', en: 'Why were you laughing?', alt: ['Why did you laugh?'] },
             { la: 'Ubi erātis?', en: 'Where were you?', alt: ['Where were you all?'] }
           ],
           drills: [
-            { la: 'Ōlim in vīllā {habitābam}.', opts: ['habitō', 'habitābant'], en: 'Once I used to live in a villa.', why: 'past (ongoing / habit), "I" → <b>-bam</b>' },
+            { la: 'Ōlim in vīllā {habitābam}.', opts: ['habitō', 'habitābant'], en: 'I used to live in a villa once.', why: 'past (ongoing / habit), "I" → <b>-bam</b>' },
             { la: 'Puerī saepe {ambulābant}.', opts: ['ambulābat', 'ambulant'], en: 'The boys often walked.', why: 'past, "they" → <b>-bant</b>' },
             { la: 'Tum Rōma parva {erat}.', opts: ['est', 'erant'], en: 'Then Rome was small.', why: '"was" = <i>erat</i>' },
             { la: 'Cūr {rīdēbās}?', opts: ['rīdēs', 'rīdēbat'], en: 'Why were you laughing?', why: 'past, "you" → <b>-bās</b>' },
@@ -1562,7 +1562,7 @@
             { la: 'Mox Rōmam vidēbis.', en: 'Soon you will see Rome.', alt: ['You will soon see Rome.'] },
             { la: 'Crās nāvigābō.', en: 'Tomorrow I will sail.', alt: ['I will sail tomorrow.', 'Tomorrow I shall sail.'] },
             { la: 'Iter longum erit.', en: 'The journey will be long.' },
-            { la: 'Nōn omnis moriar.', en: 'I shall not wholly die.', alt: ['I will not wholly die.', 'Not all of me will die.'], src: 'Horace, Odes 3.30.6', note: 'Horace on his poetry: part of him will live on. <i>moriar</i> = "I shall die" (a 3rd-family future in -ar).' }
+            { la: 'Nōn omnis moriar.', en: 'I shall not wholly die.', alt: ['I will not wholly die.', 'Not all of me will die.'], src: 'Horace, Odes 3.30.6', note: 'Horace on his poetry: part of him will live on. <i>moriar</i> = "I shall die" (<i>morior</i> is an odd verb — just learn this form).' }
           ],
           drills: [
             { la: 'Crās {ambulābimus}.', opts: ['ambulāmus', 'ambulābāmus'], en: 'Tomorrow we will walk.', why: 'future, "we" → <b>-bimus</b>' },
@@ -1575,7 +1575,7 @@
 <table class="tbl"><tr><td>amā<b>bō</b></td><td>amā<b>bimus</b></td><td>erō</td><td>erimus</td></tr>
 <tr><td>amā<b>bis</b></td><td>amā<b>bitis</b></td><td>eris</td><td>eritis</td></tr>
 <tr><td>amā<b>bit</b></td><td>amā<b>bunt</b></td><td>erit</td><td>erunt</td></tr></table>
-<p>This <b>-b-</b> future is for families 1 and 2. Families 3 and 4 use <i>-am, -ēs, -et</i>: <i>legam, legēs, leget</i> — like Horace's <i>moriar</i>.</p>
+<p>This <b>-b-</b> future is for families 1 and 2. Families 3 and 4 use <i>-am, -ēs, -et</i>: <i>legam, legēs, leget</i>.</p>
 <p>⏳ <i>herī ambulāvī</i> → <i>hodiē ambulō</i> → <i>crās ambulābō</i>. Watch <b>-bā-</b> (was) vs <b>-bi-</b> (will).</p>`
         },
         {
@@ -1594,15 +1594,15 @@
               { la: 'Subitō mōns fūmum et ignem ēmīsit!', en: 'Suddenly the mountain sent out smoke and fire!' },
               { la: 'Hominēs clāmābant et fugiēbant.', en: 'People were shouting and fleeing.' },
               { la: 'Cinis oppidum tēxit, et oppidum diū dormīvit.', en: 'Ash covered the town, and the town slept for a long time.' },
-              { la: 'Hodiē multī hominēs oppidum vīsitant — crās tū quoque vidēbis!', en: 'Today many people visit the town — tomorrow you will see it too!' }
+              { la: 'Hodiē multī hominēs oppidum vīsunt et dē hominibus miserīs cōgitant.', en: 'Today many people visit the town and think of the unhappy people.' }
             ],
             qs: [
-              { q: 'What did the mountain send out?', a: 'smoke and fire', opts: ['water', 'snow'], line: 2 },
-              { q: 'What did the people do?', a: 'they shouted and fled', opts: ['they sang and danced', 'they stayed calm'], line: 3 },
-              { q: 'What happens today?', a: 'many people visit the town', opts: ['the town is still burning', 'nobody remembers it'], line: 5 }
+              { q: 'What did the mountain send out?', a: 'smoke and fire', opts: ['water and mud', 'only noise'], line: 2 },
+              { q: 'What did the people do?', a: 'they shouted and fled', opts: ['they stayed and watched', 'they went to sleep'], line: 3 },
+              { q: 'What happens today?', a: 'many people visit the town', opts: ['merchants work there again', 'the mountain sleeps forever'], line: 5 }
             ]
           },
-          tip: `<h3>📖 AD 79</h3><p>Pompeii and Herculaneum were buried by Vesuvius in AD 79. Pliny the Younger, an eyewitness, described it in two letters to the historian Tacitus (<i>Epistulae</i> 6.16 and 6.20).</p><p>This story uses every tense you know: imperfect (<i>habitābant</i>), perfect (<i>ēmīsit</i>), present (<i>vīsitant</i>) and future (<i>vidēbis</i>).</p>`
+          tip: `<h3>📖 AD 79</h3><p>Pompeii and Herculaneum were buried by Vesuvius in AD 79. Pliny the Younger, an eyewitness, described it in two letters to the historian Tacitus (<i>Epistulae</i> 6.16 and 6.20).</p><p>This story uses every tense you know: imperfect (<i>habitābant</i>), perfect (<i>ēmīsit</i>), present (<i>vīsunt</i>); the future is in the practice sentences. Some perfects look new (<i>ēmīsit, tēxit, dormīvit</i>) — tap them.</p>`
         }
       ]
     },
@@ -1678,7 +1678,7 @@
             { la: 'Labor omnia {vīcit} improbus.', opts: ['vincit', 'vīcērunt'], en: 'Relentless work conquered everything.', why: 'past, one subject → perfect <i>vīc<b>it</b></i>' },
             { la: 'Nōn scholae sed {vītae} discimus.', opts: ['vīta', 'vītam'], en: 'We learn not for school but for life.', why: '"for life" → dative <b>-ae</b>' }
           ],
-          tip: `<h3>📜 Original Latin</h3><p>No more simplifications: these are the lines as their authors wrote them. Use everything you know — cases, verb endings, the perfect — and tap words you've not met.</p>
+          tip: `<h3>📜 Original Latin</h3><p>Almost no simplifications: most are the lines as their authors wrote them; <i>Nūlla diēs sine līneā</i> and <i>Docendō discimus</i> are the proverb forms of Pliny's and Seneca's words. Use everything you know — cases, verb endings, the perfect — and tap words you've not met.</p>
 <p>🎯 <i>do-<b>CEN</b>-dō</i>, <i><b>Ō</b>-ti-um</i>, <i><b>LĪ</b>-ne-ā</i>.</p>`
         },
         {
@@ -1686,8 +1686,8 @@
           words: ['sententia', 'fabula', 'certus'],
           sentences: [
             { la: 'Amīcus certus in rē incertā cernitur.', en: 'A sure friend is seen in an unsure situation.', alt: ['A true friend is known in a time of trouble.', 'A reliable friend is seen in an uncertain situation.', 'A sure friend is seen in an uncertain situation.'], src: 'Ennius, quoted by Cicero, Dē Amīcitiā 64', note: 'A play on words: <i>certus</i> (sure) — <i>in-certā</i> (unsure).' },
-            { la: 'Lupus in fābulā!', en: 'The wolf in the story!', alt: ['Speak of the wolf!', 'The wolf in the fable!'], src: 'Terence, Adelphoe 537', note: 'Said when the person you are talking about suddenly appears — "speak of the devil".' },
-            { la: 'Vae victīs!', en: 'Woe to the conquered!', alt: ['Woe to the vanquished!'], src: 'Livy, Ab Urbe Conditā 5.48.9 — the Gallic chief Brennus, 390 BC' },
+            { la: 'Lupus in fābulā!', en: 'The wolf in the story!', alt: ['Speak of the wolf!', 'Speak of the devil!', 'The wolf in the fable!'], src: 'Terence, Adelphoe 537', note: 'Said when the person you are talking about suddenly appears — "speak of the devil".' },
+            { la: 'Vae victīs!', en: 'Woe to the conquered!', alt: ['Woe to the vanquished!', 'Woe to the defeated!'], src: 'Livy, Ab Urbe Conditā 5.48.9 — the Gallic chief Brennus, 390 BC' },
             { la: 'Audentēs fortūna iuvat.', en: 'Fortune helps the bold.', alt: ['Fortune favours the bold.', 'Fortune favors the bold.', 'Fortune helps those who dare.'], src: 'Vergil, Aeneid 10.284' }
           ],
           drills: [
@@ -1707,7 +1707,7 @@
           words: ['vulpes', 'fames'],
           sentences: [
             { la: 'Vulpēs ūvam appetēbat.', en: 'The fox was reaching for the grape.', alt: ['The fox was trying to get the grape.', 'The fox reached for the grape.'], src: 'after Phaedrus, Fābulae 4.3' },
-            { la: 'Nōndum mātūra est.', en: 'It is not ripe yet.', alt: ['It is not yet ripe.'], src: 'Phaedrus, Fābulae 4.3.4' },
+            { la: 'Nōndum mātūra es.', en: 'You are not ripe yet.', alt: ['You are not yet ripe.'], src: 'Phaedrus, Fābulae 4.3.4', note: 'The fox talks to the grape: <i>es</i> = you are.' },
             { la: 'Nōlō acerbam sūmere.', en: "I don't want to take a sour one.", alt: ['I do not want to take a sour one.', 'I do not want to take it sour.', "I don't want to take it sour."], src: 'Phaedrus, Fābulae 4.3.4' }
           ],
           story: {
@@ -1716,7 +1716,7 @@
               { la: 'Famē coācta vulpēs altā in vīneā', en: 'Driven by hunger, a fox, in a high vineyard,' },
               { la: 'ūvam appetēbat summīs saliēns vīribus;', en: 'was reaching for a grape, leaping with all her strength;' },
               { la: 'quam tangere ut nōn potuit, discēdēns ait:', en: 'when she could not touch it, she said as she went away:' },
-              { la: '“Nōndum mātūra est; nōlō acerbam sūmere.”', en: '“It is not ripe yet; I don\'t want to take it sour.”' },
+              { la: '“Nōndum mātūra es; nōlō acerbam sūmere.”', en: '“You are not ripe yet; I don\'t want to take you sour.”' },
               { la: 'Quī facere quae nōn possunt verbīs ēlevant,', en: 'Those who belittle with words what they cannot do' },
               { la: 'adscrībere hoc dēbēbunt exemplum sibi.', en: 'should apply this example to themselves.' }
             ],
@@ -1729,7 +1729,7 @@
           drills: [
             { la: '{Vulpēs} ūvam appetēbat.', opts: ['vulpem', 'vulpis'], en: 'The fox was reaching for the grape.', why: 'subject → nominative' },
             { la: 'Vulpēs {ūvam} appetēbat.', opts: ['ūva', 'ūvae'], en: 'The fox was reaching for the grape.', why: 'object → <b>-am</b>' },
-            { la: 'Nōndum {mātūra} est.', opts: ['mātūrus', 'mātūrum'], en: 'It is not ripe yet.', why: 'the grape (<i>ūva</i>) is feminine → <b>-a</b>' }
+            { la: 'Nōndum {mātūra} es.', opts: ['mātūrus', 'mātūrum'], en: 'You are not ripe yet (says the fox to the grape).', why: 'the grape (<i>ūva</i>) is feminine → <b>-a</b>' }
           ],
           tip: `<h3>📜 Phaedrus</h3><p>Phaedrus (1st century AD), a freed slave of the emperor Augustus, put Aesop's Greek fables into Latin verse. This one gave English the phrase "sour grapes".</p>
 <p>Poets move words around for the metre: <i>altā in vīneā</i> = <i>in altā vīneā</i>; <i>summīs … vīribus</i> = "with utmost strength". Find the noun, then its adjective by the ending.</p>`
@@ -1756,11 +1756,11 @@
             qs: [
               { q: 'What does the poet want to do?', a: 'live and love', opts: ['work and save money', 'travel to Rome'], line: 0 },
               { q: 'What are the old men\'s words worth to him?', a: 'one penny', opts: ['a thousand kisses', 'a great deal'], line: 2 },
-              { q: 'What does the "endless night" stand for?', a: 'death', opts: ['winter', 'a long party'], line: 5 }
+              { q: 'What does the "endless night" stand for?', a: 'death', opts: ['winter', 'a long journey'], line: 5 }
             ]
           },
           drills: [
-            { la: '{Vīvāmus}, mea Lesbia.', opts: ['Vīvimus', 'Vīvit'], en: 'Let us live, my Lesbia.', why: '"let us…" has its own form: <i>vīv<b>āmus</b></i>, <i>am<b>ēmus</b></i>' },
+            { la: '{Vīvāmus}, mea Lesbia, atque amēmus.', opts: ['Vīvimus', 'Vīvit'], en: 'Let us live, my Lesbia, and let us love.', why: '"let us…" has its own form: <i>vīv<b>āmus</b></i>, <i>am<b>ēmus</b></i>' },
             { la: 'Nōn amō tē, {Sabidī}.', opts: ['Sabidius', 'Sabidium'], en: 'I do not love you, Sabidius.', why: 'calling someone named <i>-ius</i> → <b>-ī</b> (vocative)' },
             { la: 'Sōlēs occidere et redīre {possunt}.', opts: ['potest', 'possum'], en: 'Suns can set and rise again.', why: 'suns = "they" → <i>possunt</i>' }
           ],
@@ -1786,7 +1786,7 @@
             qs: [
               { q: 'Into how many parts is Gaul divided?', a: 'three', opts: ['two', 'four'], line: 0 },
               { q: 'What do the "Gauls" call themselves?', a: 'Celts', opts: ['Romans', 'Belgae'], line: 2 },
-              { q: 'In what do these peoples differ?', a: 'language, customs and laws', opts: ['only in size', 'in nothing'], line: 3 },
+              { q: 'In what do these peoples differ?', a: 'language, customs and laws', opts: ['in food and clothes', 'in kings and gods'], line: 3 },
               { q: 'Who are the bravest?', a: 'the Belgae', opts: ['the Aquitani', 'the Romans'], line: 4 }
             ]
           },
@@ -1796,7 +1796,7 @@
             { la: 'Hī omnēs {linguā} differunt.', opts: ['lingua', 'linguam'], en: 'All these differ in language.', why: '"in language" → ablative <b>-ā</b>, no preposition needed' }
           ],
           tip: `<h3>📜 Caesar's own words</h3><p>You met the first line in <i>Sententiae I</i> — here is the whole opening paragraph. Caesar wrote about himself in the third person, in famously clear Latin; schoolchildren have started with it for 2,000 years.</p>
-<p>New: <b>-issimus</b> = "very / the most": <i>fortis</i> brave → <i>fortissimus</i> bravest.</p>`
+<p>New: <b>-issimus</b> = "the most …" (sometimes "very …"): <i>fortis</i> brave → <i>fortissimus</i> bravest.</p><p>The ablative alone can mean "in respect of": <i>linguā differunt</i> = they differ <b>in</b> language — no preposition needed.</p>`
         }
       ]
     }
