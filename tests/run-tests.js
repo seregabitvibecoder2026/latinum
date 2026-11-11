@@ -125,6 +125,12 @@ test('FROZEN ids still exist (never delete ids that users may have saved)', () =
   fr.achievements.forEach(id => ok(app.includes(`id: '${id}'`), `achievement id "${id}" was removed/renamed`));
 });
 
+test('index.html cache-busting ?v= matches APP_VERSION', () => {
+  const v = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8').match(/APP_VERSION = '([0-9.]+)/)[1];
+  const refs = fs.readFileSync(path.join(root, 'index.html'), 'utf8').match(/\?v=[0-9.]+/g) || [];
+  eq(refs.length, 5, 'all 4 scripts + css need ?v='); refs.forEach(r => eq(r, '?v=' + v, 'bump ?v= in index.html'));
+});
+
 // ---------------- save system ----------------
 test('frozen save constants unchanged', () => {
   eq([S.APP_ID, S.STORAGE_KEY, S.BACKUP_KEY, S.DEVICE_KEY, S.CODE_PREFIX],
