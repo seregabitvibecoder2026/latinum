@@ -105,6 +105,66 @@ Content work never needs `app.js`, `save.js`, `latin.js` or `css/`. Don't open t
 7. `node tests/run-tests.js` — it tells you exactly what is missing (glosses, broken drills,
    bad stories, review ids). For tricky stress, add the word to `STRESS` in the test file.
 
+## 🧭 Continuing the course — everything an AI needs
+
+1. **Recipe** — the steps above ("Adding lessons — the cheap way").
+
+2. **Exercise types that already exist** (in `EX`, `js/app.js`). You almost never need a new
+   one — pick the data field that feeds an existing type. *Auto* = generated from the lesson's
+   `words` / `sentences` without extra data; *field* = you must write that field in `course.js`.
+
+   | Type | Purpose | Fed by |
+   |---|---|---|
+   | `teach` | introduce a new word (picture, stress, `info`) — info screen, no answer | auto: every new word |
+   | `pic` | Latin word → pick the picture | auto: words without `nopic`/`proper` |
+   | `la2en` | Latin word → pick the English meaning | auto: words |
+   | `en2la` | English → pick the Latin word (tapping a block speaks it) | auto: words |
+   | `type` | English → type the Latin (macrons give ✨) | auto: words, from lesson level 1–2 |
+   | `listen` | hear a word → pick it (needs a voice + setting) | auto: words |
+   | `match` | tap Latin–English pairs (4–5 words) | auto: words + learned words |
+   | `macron` | long vs short vowel changes the meaning (*malum / mālum*) | field `pairs: [[id, id]]` |
+   | `stressTap` | tap the stressed syllable | auto: 2+ syllable words/sentence tokens |
+   | `stressPick` | pick the right respelling (*a-MEE-kus*) | auto: same |
+   | `stressHear` | hear 3 versions, pick the right stress (no auto-play) | auto: 3+ syllables, voice that can force stress |
+   | `weigh` | is the penult heavy or light? | auto: only with `focus: 'stress'` |
+   | `buildEn` | Latin sentence → build the English from tiles | field `sentences` (`en` + `alt`) |
+   | `buildLa` | English → build the Latin from tiles (free word order accepted) | field `sentences` (`la`, `altLa`) |
+   | `form` | 🧩 **grammar**: pick the right form for the gap, then show `why` | field `drills` |
+   | `story` | 📖 read a short text (tap words, 🔊, 👁️ translation) — info screen | field `story.lines` |
+   | `storyQ` | 📖 **reading comprehension** question about the story | field `story.qs` |
+
+   Grouped: words = `teach, pic, la2en, en2la, type, listen, match` · stress = `stressTap,
+   stressPick, stressHear, weigh` (+ `macron` for vowel length) · sentences = `buildEn, buildLa` ·
+   grammar = `form` · reading = `story, storyQ`. Unit reviews (🏆) mix all of them automatically.
+   Practice screen reuses them: due review, weak words, stress drill, sentences, grammar (`drills`).
+   `proper: true` words (names) get only `teach` + stress drills, no translation quizzes.
+
+3. **Size & style norms** (follow them so new lessons feel like the existing ones):
+   - **Words:** 2–6 new words per lesson (story lessons: 1–5, words the story needs). Reuse known words freely in
+     sentences; every inflected form you use must be in `GLOSS`.
+   - **Sentences:** 4–6 per lesson (story lessons: 2–3 short ones taken from the story).
+     Short (≤ 8 words), only grammar already taught or being taught. `en` = the most natural
+     translation; `alt` = 1–4 other accepted versions (articles are ignored automatically).
+     At most 1–2 quotes (`src`) per lesson.
+   - **Drills (`form`):** 5–7 per grammar lesson (in quote/text lessons: 3). One `{gap}`;
+     `opts` = 1–2 **real** wrong forms of the same word (wrong case/person/tense — the typical
+     mistake); `en` = the meaning; `why` = one short line naming the rule, ending in **bold**:
+     `'plural subject → <b>-nt</b>'`. Mix: mostly the new form, 1 drill contrasting it with an
+     older form (e.g. subject vs object).
+   - **Story:** ~6 lines (5–7), each line one short sentence (≤ 10 words, 2 max per line);
+     uses this unit's grammar and may preview the next one. **3 questions** (4 for long texts),
+     in English, answers short; `line` = index of the line that answers it.
+     The cast so far: Mārcus, Iūlia (his sister), magister, dominus, coquus, ancilla, the dog.
+   - **Tip (`tip`):** shown before the first run — it IS the teaching. `<h3>` title, then a
+     **`<table class="tbl">`** with the paradigm/endings, 1–3 short `<p>`: the rule, a ⚠️ trap,
+     a 🎯 stress note (`a-<b>MĀ</b>-mus`), and a 📜 line about the quote/author if there is one.
+   - **Lesson fields:** `id: 'l_<unit>_<n>'` (new, never reused), English `title` (≤ 4 words,
+     stories start with `Story:`), one `icon` emoji, `gram` = one-line grammar focus.
+     Order inside a unit: words/grammar lessons first, the story lesson last, review added automatically.
+   - **Unit:** 2–5 lessons + 🏆 review; `gram` = one line; a `color` not used by the neighbours.
+   - **Latin:** classical spelling with macrons, `v` for consonantal u, stress checked
+     (run the tests; add tricky words to `STRESS`). Quotes: real `src`, "after …" if adapted.
+
 ### Curriculum concept ("Via Latina")
 Six parts: I sounds → II first words (est) → III actions (verbs, accusative) → IV the world
 (prepositions, adjectives, plurals) → V Roman life (conjugations, genitive, questions,
